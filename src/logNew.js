@@ -1,0 +1,272 @@
+import { supa, requireSession } from './supa.js'
+import { initAuthUI } from './auth.js'
+import { v4 as uuidv4 } from 'uuid'
+
+const $ = (s) => document.querySelector(s)
+const marks = { B: null, U: null, C: null }
+
+await initAuthUI('#auth')
+const session = await requireSession()
+if (!session) throw new Error('ログインしてください')
+
+async function loadMasters() {
+  const [recipes, pastas, cheeses] = await Promise.all([
+    supa.from('recipes').select('id,name').eq('is_active', true).order('name'),
+    supa.from('pasta_kinds').select('id,brand,thickness_mm,purchase_location,image_path,image_url').eq('is_active', true).order('brand').order('thickness_mm'),
+    supa.from('cheeses').select('id,name,image_path,image_url').eq('is_active', true).order('name')
+  ])
+  
+  // レシピ（カテゴリ）は従来通り
+  const recipeEl = $('#recipe'); recipeEl.innerHTML = ''
+  recipes.data?.forEach(r => { 
+    const o=document.createElement('option'); o.value=r.id; o.textContent=r.name; recipeEl.appendChild(o) 
+  })
+  
+  // パスタは画像付きカスタムドロップダウン
+  await createPastaDropdown(pastas.data)
+  
+  // チーズは従来通り
+  await fillWithImages('#cheese', cheeses.data, 'pasta-images')
+}
+
+// パスタの画像付きカスタムドロップダウンを作成
+async function createPastaDropdown(pastas) {
+  const container = $('#pasta').parentElement
+  const originalSelect = $('#pasta')
+  
+  // カスタムドロップダウンのHTML
+  const customDropdown = document.createElement('div')
+  customDropdown.className = 'relative'
+  customDropdown.innerHTML = `
+    <div id="pastaDropdown" class="input cursor-pointer flex items-center justify-between">
+      <span id="pastaSelected">パスタを選択</span>
+      <span>▼</span>
+    </div>
+    <div id="pastaOptions" class="absolute top-full left-0 right-0 bg-white border rounded-xl mt-1 max-h-60 overflow-y-auto hidden z-10 shadow-lg">
+    </div>
+  `
+  
+  // 元のselectを隠してカスタムドロップダウンを追加
+  originalSelect.style.display = 'none'
+  container.appendChild(customDropdown)
+  
+  // 元のselectにもoptionを追加（バリデーション用）
+  originalSelect.innerHTML = '<option value="">パスタを選択</option>'
+  
+  // オプションを作成
+  const optionsContainer = customDropdown.querySelector('#pastaOptions')
+  for (const pasta of (pastas || [])) {
+    let imgUrl = null
+    if (pasta.image_url) {
+      imgUrl = pasta.image_url
+    } else if (pasta.image_path) {
+      const { data: urlData } = await supa.storage.from('pasta-images').createSignedUrl(pasta.image_path, 3600)
+      if (urlData) imgUrl = urlData.signedUrl
+    }
+    
+    const displayName = `${pasta.brand || 'ブランド未設定'} ${pasta.thickness_mm ? pasta.thickness_mm + 'mm' : ''}`
+    
+    // 元のselectにもoptionを追加
+    const selectOption = document.createElement('option')
+    selectOption.value = pasta.id
+    selectOption.textContent = displayName
+    originalSelect.appendChild(selectOption)
+    
+    const option = document.createElement('div')
+    option.className = 'flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0'
+    option.innerHTML = `
+      ${imgUrl ? `<img src="${imgUrl}" class="w-10 h-10 object-cover rounded-lg border" />` : '<div class="w-10 h-10 bg-gray-200 rounded-lg border flex items-center justify-center text-gray-400 text-xs">画像なし</div>'}
+      <div class="flex-1">
+        <div class="font-medium">${displayName}</div>
+        ${pasta.purchase_location ? `<div class="text-sm text-gray-500">${pasta.purchase_location}</div>` : ''}
+      </div>
+    `
+    
+    option.onclick = () => {
+      originalSelect.value = pasta.id
+      customDropdown.querySelector('#pastaSelected').textContent = displayName
+      optionsContainer.classList.add('hidden')
+    }
+    
+    optionsContainer.appendChild(option)
+  }
+  
+  // ドロップダウンの開閉
+  customDropdown.querySelector('#pastaDropdown').onclick = () => {
+    optionsContainer.classList.toggle('hidden')
+  }
+  
+  // 外側クリックで閉じる
+  document.addEventListener('click', (e) => {
+    if (!customDropdown.contains(e.target)) {
+      optionsContainer.classList.add('hidden')
+    }
+  })
+}
+
+async function fillWithImages(selector, items, bucket) {
+  const el = $(selector)
+  el.innerHTML = ''
+  
+  for (const item of (items || [])) {
+    let imgUrl = null
+    if (item.image_url) {
+      imgUrl = item.image_url
+    } else if (item.image_path) {
+      const { data: urlData } = await supa.storage.from(bucket).createSignedUrl(item.image_path, 3600)
+      if (urlData) imgUrl = urlData.signedUrl
+    }
+    
+    const option = document.createElement('option')
+    option.value = item.id
+    option.textContent = item.name
+    if (imgUrl) option.dataset.image = imgUrl
+    el.appendChild(option)
+  }
+}
+loadMasters()
+
+function stamp(k){ marks[k] = new Date().toISOString(); $('#marks').textContent = `B:${marks.B??'-'} U:${marks.U??'-'} C:${marks.C??'-'}` }
+$('#markB').onclick = ()=> stamp('B'); $('#markU').onclick = ()=> stamp('U'); $('#markC').onclick = ()=> stamp('C')
+
+// 星評価の設定
+function setupStarRating(containerId, inputId) {
+  const container = $(containerId)
+  const input = $(inputId)
+  const stars = container.querySelectorAll('.star-btn')
+  
+  stars.forEach((star) => {
+    star.onclick = (e) => {
+      e.preventDefault()
+      const rating = parseInt(star.dataset.rating)
+      input.value = rating
+      
+      // 星の表示を更新
+      stars.forEach((s, i) => {
+        s.classList.toggle('active', i < rating)
+      })
+    }
+  })
+}
+
+setupStarRating('#overallStars', '#overall')
+setupStarRating('#firmnessStars', '#firmness')
+
+// 茹で時間ステッパーの機能
+const boilTimeInput = $('#boilTime')
+const boilTimeDisplay = $('#boilTimeDisplay')
+
+function updateBoilTimeDisplay() {
+  const seconds = parseInt(boilTimeInput.value)
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  boilTimeDisplay.textContent = `${minutes}分${remainingSeconds.toString().padStart(2, '0')}秒`
+}
+
+$('#boilTimeMinus').onclick = () => {
+  const current = parseInt(boilTimeInput.value)
+  const newValue = Math.max(60, current - 10)
+  boilTimeInput.value = newValue
+  updateBoilTimeDisplay()
+}
+
+$('#boilTimePlus').onclick = () => {
+  const current = parseInt(boilTimeInput.value)
+  const newValue = Math.min(1200, current + 10)
+  boilTimeInput.value = newValue
+  updateBoilTimeDisplay()
+}
+
+boilTimeInput.oninput = updateBoilTimeDisplay
+updateBoilTimeDisplay()
+
+// 塩分濃度の計算と表示
+function updateSaltPercentage() {
+  const water = parseFloat($('#waterAmount').value) || 0
+  const salt = parseFloat($('#saltAmount').value) || 0
+  const percentage = water > 0 ? (salt / (water * 1000) * 100).toFixed(1) : 0
+  $('#saltPercentage').textContent = water > 0 && salt > 0 ? `塩分濃度: ${percentage}%` : ''
+}
+
+$('#waterAmount').oninput = updateSaltPercentage
+$('#saltAmount').oninput = updateSaltPercentage
+
+// 新しい麺を登録ボタンの機能
+$('#addNewPasta').onclick = () => {
+  if (confirm('管理画面で新しい麺を登録しますか？')) {
+    location.href = '/manage.html'
+  }
+}
+
+
+async function uploadPhoto(file, userId){
+  if(!file) return { path: null, url: null }
+  const ext = file.type === 'image/png' ? 'png' : 'jpg'
+  const path = `${userId}/${uuidv4()}.${ext}`
+  const { error } = await supa.storage.from('pasta-photos').upload(path, file, { upsert:false, contentType:file.type })
+  if(error){ alert('写真アップロード失敗: '+error.message); return { path:null, url:null } }
+  const { data } = supa.storage.from('pasta-photos').getPublicUrl(path) // Public想定
+  return { path, url: data.publicUrl }
+}
+
+$('#logForm').onsubmit = async (e) => {
+  e.preventDefault()
+  console.log('フォーム送信開始')
+  
+  // 麺選択の必須チェック
+  const pastaValue = $('#pasta').value
+  console.log('パスタselect要素の値:', pastaValue)
+  console.log('パスタselect要素:', $('#pasta'))
+  
+  if (!pastaValue) {
+    alert('麺を選択してください')
+    return
+  }
+  
+  console.log('バリデーション通過')
+  
+  const userId = (await supa.auth.getUser()).data.user.id
+  const photoFile = $('#photo').files[0]
+  const photo = await uploadPhoto(photoFile, userId)
+  const cheeseSel = Array.from($('#cheese').selectedOptions).map(o=>o.value)
+
+  // パスタ名をメモ欄に含める一時的な対応
+  let feedbackText = $('#feedback').value || ''
+  const pastaName = $('#pastaName').value
+  if (pastaName) {
+    feedbackText = `【${pastaName}】\n${feedbackText}`.trim()
+  }
+
+  // 塩分濃度を計算
+  const water = parseFloat($('#waterAmount').value) || null
+  const salt = parseFloat($('#saltAmount').value) || null
+  const saltPct = (water && salt) ? (salt / (water * 1000) * 100) : null
+
+  console.log('データベース挿入開始')
+  const insertData = {
+    recipe_id: $('#recipe').value,
+    pasta_kind_id: $('#pasta').value,
+    cheese_kind_ids: cheeseSel,
+    boil_start_ts: marks.B, up_ts: marks.U, combine_end_ts: marks.C,
+    boil_salt_pct: saltPct,
+    ladle_half_units: $('#ladle').value ? Number($('#ladle').value) : null,
+    photo_path: photo.path, photo_url: photo.url,
+    rating_core: {
+      overall: $('#overall').value ? Number($('#overall').value) : null,
+      firmness: $('#firmness').value ? Number($('#firmness').value) : null
+    },
+    feedback_text: feedbackText || null,
+  }
+  
+  console.log('挿入データ:', insertData)
+  
+  const { error } = await supa.from('pasta_logs').insert(insertData)
+  if(error) {
+    console.error('保存エラー:', error)
+    alert('保存に失敗: '+error.message)
+  } else { 
+    console.log('保存成功')
+    alert('保存しました')
+    location.href = '/log-list.html' 
+  }
+}

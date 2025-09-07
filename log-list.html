@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>履歴 - Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/log-new.html" class="btn">新規記録</a>
+      <a href="/manage.html" class="btn">管理</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-4">
+    <h2 class="text-xl font-bold">履歴</h2>
+    <div id="auth"></div>
+
+    <section class="card flex flex-wrap items-end gap-3">
+      <div>
+        <label class="label">カテゴリ</label>
+        <select id="recipeFilter" class="input"></select>
+      </div>
+      <button id="reload" class="btn btn-primary">読み込み</button>
+    </section>
+
+    <div id="list" class="space-y-3"></div>
+  </main>
+
+  <script type="module" src="/src/logList.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>管理 - Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/log-new.html" class="btn">新規記録</a>
+      <a href="/log-list.html" class="btn">履歴</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+    <h2 class="text-xl font-bold">データ管理</h2>
+    <div id="auth"></div>
+
+    <!-- パスタ種類管理 -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">パスタの種類</h3>
+      
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="pastaBrand" placeholder="ブランド" class="input">
+          <input id="pastaPurchaseLocation" placeholder="購入場所" class="input">
+        </div>
+        
+        <div class="space-y-2">
+          <label class="label">太さ(mm)</label>
+          <input id="pastaThickness" placeholder="太さ(mm)" type="number" step="0.1" min="1.2" max="2" class="input">
+          <div class="grid grid-cols-4 gap-1 text-xs">
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.2">1.2mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.3">1.3mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.4">1.4mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.5">1.5mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.6">1.6mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.7">1.7mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.8">1.8mm</button>
+            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="2.0">2.0mm</button>
+          </div>
+        </div>
+        
+        <div class="flex gap-3">
+          <input id="pastaImage" type="file" accept="image/*" class="input flex-1">
+          <button id="addPasta" class="btn btn-primary">追加</button>
+          <button id="cancelPastaEdit" class="btn" style="display:none">キャンセル</button>
+        </div>
+      </div>
+
+      <div id="pastaList" class="space-y-2"></div>
+    </section>
+
+    <!-- チーズ種類管理 -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">チーズの種類</h3>
+      
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input id="cheeseName" placeholder="チーズ名" class="input">
+          <input id="cheeseManufacturer" placeholder="メーカー" class="input">
+          <input id="cheesePurchaseLocation" placeholder="購入場所" class="input">
+        </div>
+        
+        <div class="flex gap-3">
+          <input id="cheeseImage" type="file" accept="image/*" class="input flex-1">
+          <button id="addCheese" class="btn btn-primary">追加</button>
+          <button id="cancelCheeseEdit" class="btn" style="display:none">キャンセル</button>
+        </div>
+      </div>
+
+      <div id="cheeseList" class="space-y-2"></div>
+    </section>
+  </main>
+
+  <script type="module" src="/src/manage.js"></script>
+</body>
+</html>

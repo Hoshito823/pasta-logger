@@ -1,0 +1,94 @@
+<!doctype html><html lang="ja"><head>
+<meta charset="UTF-8" /><title>新規記録 - Pasta Logger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/src/style.css" />
+</head><body class="min-h-screen bg-gray-50 text-gray-900">
+<header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+  <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+    <a href="/" class="font-semibold">Pasta Logger</a>
+    <a href="/log-list.html" class="btn">履歴</a>
+    <a href="/manage.html" class="btn">管理</a>
+  </nav>
+</header>
+
+<main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+  <h2 class="text-xl font-bold">新規記録</h2>
+  <div id="auth"></div>
+
+  <form id="logForm" class="card space-y-4" novalidate>
+    <div><label class="label">写真</label><input type="file" id="photo" name="photo" accept="image/*" class="input"></div>
+
+    <div><label class="label">パスタ名</label><input id="pastaName" name="pastaName" class="input" placeholder="ナスとアンチョビのペペロンチーノ"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div><label class="label">カテゴリ</label><select id="recipe" name="recipe" class="input"></select></div>
+      <div>
+        <label class="label">麺 <span class="text-red-500">*</span></label>
+        <select id="pasta" name="pasta" class="input" required></select>
+        <button type="button" id="addNewPasta" class="btn text-xs mt-1 w-full">新しい麺を登録</button>
+      </div>
+      <div><label class="label">チーズ（複数可）</label><select id="cheese" name="cheese" class="input" multiple size="3"></select></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="label">茹で時間</label>
+        <div class="flex items-center gap-2">
+          <button type="button" id="boilTimeMinus" class="btn w-8 h-8 flex items-center justify-center p-0">-</button>
+          <input id="boilTime" name="boilTime" type="number" min="60" max="1200" step="10" value="480" class="input text-center flex-1" readonly>
+          <button type="button" id="boilTimePlus" class="btn w-8 h-8 flex items-center justify-center p-0">+</button>
+        </div>
+        <div class="text-center text-sm text-gray-600 mt-1"><span id="boilTimeDisplay">8分00秒</span></div>
+      </div>
+      <div><label class="label">水量(L)</label><input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="1.0"></div>
+      <div><label class="label">塩(g)</label><input id="saltAmount" name="saltAmount" type="number" step="1" class="input" placeholder="12"></div>
+      <div><label class="label">茹で汁(お玉0.5)</label><input id="ladle" name="ladle" type="number" step="0.5" class="input" placeholder="1.0"></div>
+    </div>
+    
+    <div class="text-sm text-gray-500" id="saltPercentage"></div>
+
+    <div class="flex flex-wrap gap-2">
+      <button type="button" id="markB" class="btn">B(茹で開始)</button>
+      <button type="button" id="markU" class="btn">U(上げ)</button>
+      <button type="button" id="markC" class="btn">C(合わせ終了)</button>
+      <span id="marks" class="text-sm text-gray-600"></span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="label">総合★</label>
+        <div class="flex gap-1" id="overallStars">
+          <button type="button" class="star-btn" data-rating="1">★</button>
+          <button type="button" class="star-btn" data-rating="2">★</button>
+          <button type="button" class="star-btn" data-rating="3">★</button>
+          <button type="button" class="star-btn" data-rating="4">★</button>
+          <button type="button" class="star-btn" data-rating="5">★</button>
+        </div>
+        <input id="overall" name="overall" type="hidden">
+      </div>
+      <div>
+        <label class="label">堅さ</label>
+        <div class="flex gap-1" id="firmnessStars">
+          <button type="button" class="star-btn" data-rating="1">★</button>
+          <button type="button" class="star-btn" data-rating="2">★</button>
+          <button type="button" class="star-btn" data-rating="3">★</button>
+          <button type="button" class="star-btn" data-rating="4">★</button>
+          <button type="button" class="star-btn" data-rating="5">★</button>
+        </div>
+        <input id="firmness" name="firmness" type="hidden">
+      </div>
+    </div>
+
+    <div><label class="label">メモ</label>
+      <textarea id="feedback" name="feedback" rows="3" class="input" placeholder="少し硬すぎ／ソース開始が遅れた 等"></textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="btn btn-primary">保存</button>
+      <a class="btn" href="/log-list.html">キャンセル</a>
+    </div>
+  </form>
+</main>
+
+<script type="module" src="/src/logNew.js"></script>
+</body></html>

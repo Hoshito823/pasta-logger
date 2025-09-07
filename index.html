@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/log-new.html" class="btn">新規記録</a>
+      <a href="/log-list.html" class="btn">履歴</a>
+      <a href="/manage.html" class="btn">管理</a>
+      <button id="themeToggle" class="ml-auto btn">🌓</button>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+    <section class="card space-y-3">
+      <h1 class="text-2xl font-bold">ようこそ</h1>
+      <div class="flex gap-3 flex-wrap">
+        <a class="btn btn-primary" href="/log-new.html">新規記録</a>
+        <a class="btn" href="/log-list.html">履歴をすべて見る</a>
+        <a class="btn" href="/manage.html">データ管理</a>
+      </div>
+    </section>
+    
+    <section id="recentLogs">
+      <h2 class="text-xl font-bold mb-4">最近の記録</h2>
+      <div id="logsList" class="space-y-3"></div>
+    </section>
+    
+    <section id="auth"></section>
+  </main>
+
+  <script type="module">
+    import { initAuthUI } from './src/auth.js'
+    import { supa } from './src/supa.js'
+    
+    const html = document.documentElement
+    document.getElementById('themeToggle').onclick = () => {
+      html.classList.toggle('dark')
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light')
+    }
+    if (localStorage.getItem('theme') === 'dark') html.classList.add('dark')
+    
+    initAuthUI('#auth')
+    
+    // 最近の記録を表示
+    async function loadRecentLogs() {
+      try {
+        const { data } = await supa.from('pasta_logs')
+          .select('id,taken_at,photo_url,photo_path,rating_core,feedback_text')
+          .order('taken_at', { ascending: false })
+          .limit(5)
+        
+        const list = document.querySelector('#logsList')
+        if (!data?.length) {
+          list.innerHTML = '<p class="text-gray-500">記録がありません</p>'
+          return
+        }
+        
+        list.innerHTML = ''
+        for (const row of data) {
+          const star = row.rating_core?.overall ?? '-'
+          let imgUrl = null
+          if (row.photo_url) imgUrl = row.photo_url
+          else if (row.photo_path) {
+            const { data: urlData } = await supa.storage.from('pasta-photos').createSignedUrl(row.photo_path, 3600)
+            if (urlData) imgUrl = urlData.signedUrl
+          }
+          
+          const img = imgUrl ? `<img src="${imgUrl}" class="w-20 h-16 object-cover rounded-lg border" />` : ''
+          const card = document.createElement('div')
+          card.className = 'card p-0'
+          card.innerHTML = `
+            <a class="block p-4 hover:bg-gray-50 rounded-2xl" href="/log-detail.html?id=${row.id}">
+              <div class="flex gap-3">
+                ${img}
+                <div class="flex-1">
+                  <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
+                  <div class="font-semibold">★${star}</div>
+                  <div class="text-gray-700">${(row.feedback_text||'').slice(0,100)}</div>
+                </div>
+              </div>
+            </a>`
+          list.appendChild(card)
+        }
+      } catch (error) {
+        console.log('Recent logs load error:', error)
+      }
+    }
+    
+    loadRecentLogs()
+  </script>
+</body>
+</html>

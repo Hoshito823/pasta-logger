@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+.btn{ @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 border shadow-sm bg-white hover:bg-gray-50; }
+.btn-primary{ @apply bg-gray-900 text-white hover:bg-black; }
+.card{ @apply rounded-2xl border p-4 bg-white shadow-sm; }
+.input{ @apply w-full rounded-xl border px-3 py-2 bg-white; }
+.label{ @apply block text-sm text-gray-600 mb-1; }
+
+.star-btn{ @apply text-2xl text-gray-300 hover:text-yellow-400 transition-colors border-none bg-transparent p-1; }
+.star-btn.active{ @apply text-yellow-400; }
