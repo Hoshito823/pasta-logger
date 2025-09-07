@@ -9,6 +9,8 @@ const params = new URLSearchParams(location.search)
 const id = params.get('id')
 const $ = (s) => document.querySelector(s)
 
+console.log('詳細画面: URLパラメータ確認', { search: location.search, id })
+
 if (!id) {
   $('#content').innerHTML = '<p class="text-red-600">IDが指定されていません。</p>'
   throw new Error('missing id')
@@ -26,6 +28,8 @@ async function resolvePhotoUrl(row){
 }
 
 async function load(){
+  console.log('詳細画面: データ読み込み開始', { id })
+  
   const { data, error } = await supa
     .from('pasta_logs')
     .select(`
@@ -36,7 +40,10 @@ async function load(){
     .eq('id', id)
     .single()
 
+  console.log('詳細画面: クエリ結果', { data, error })
+
   if (error) {
+    console.error('詳細画面: エラー詳細', error)
     $('#content').innerHTML = `<p class="text-red-600">読み込み失敗: ${error.message}</p>`
     return
   }
