@@ -198,6 +198,52 @@ $('#addNewPasta').onclick = () => {
   }
 }
 
+// 写真選択機能
+function setupPhotoSelection() {
+  const photoInput = $('#photo')
+  const cameraBtn = $('#cameraBtn')
+  const galleryBtn = $('#galleryBtn')
+  const photoPreview = $('#photoPreview')
+  const previewImage = $('#previewImage')
+  const removePhotoBtn = $('#removePhoto')
+
+  // カメラで撮影ボタン
+  cameraBtn.onclick = () => {
+    photoInput.setAttribute('capture', 'environment')
+    photoInput.setAttribute('accept', 'image/*')
+    photoInput.click()
+  }
+
+  // ギャラリーから選択ボタン
+  galleryBtn.onclick = () => {
+    photoInput.removeAttribute('capture')
+    photoInput.setAttribute('accept', 'image/*')
+    photoInput.click()
+  }
+
+  // ファイル選択時の処理
+  photoInput.onchange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        previewImage.src = event.target.result
+        photoPreview.classList.remove('hidden')
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // 写真削除ボタン
+  removePhotoBtn.onclick = () => {
+    photoInput.value = ''
+    photoPreview.classList.add('hidden')
+    previewImage.src = ''
+  }
+}
+
+setupPhotoSelection()
+
 
 async function uploadPhoto(file, userId){
   if(!file) return { path: null, url: null }

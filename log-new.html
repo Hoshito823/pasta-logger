@@ -16,7 +16,20 @@
   <div id="auth"></div>
 
   <form id="logForm" class="card space-y-4" novalidate>
-    <div><label class="label">写真</label><input type="file" id="photo" name="photo" accept="image/*" class="input"></div>
+    <div>
+      <label class="label">写真</label>
+      <div class="space-y-2">
+        <div class="flex gap-2">
+          <button type="button" id="cameraBtn" class="btn flex-1">📷 カメラで撮影</button>
+          <button type="button" id="galleryBtn" class="btn flex-1">🖼️ ギャラリーから選択</button>
+        </div>
+        <input type="file" id="photo" name="photo" accept="image/*" class="input hidden">
+        <div id="photoPreview" class="hidden">
+          <img id="previewImage" class="w-full max-w-xs h-auto rounded-lg border">
+          <button type="button" id="removePhoto" class="btn text-sm mt-1">写真を削除</button>
+        </div>
+      </div>
+    </div>
 
     <div><label class="label">パスタ名</label><input id="pastaName" name="pastaName" class="input" placeholder="ナスとアンチョビのペペロンチーノ"></div>
 
