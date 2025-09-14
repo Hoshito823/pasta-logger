@@ -22,6 +22,7 @@ if (!session) throw new Error('ログインしてください')
 // 編集状態の管理
 let editingPasta = null
 let editingCheese = null
+let editingRecipe = null
 
 // 太さ選択ボタンの設定
 document.querySelectorAll('.thickness-btn').forEach(btn => {
@@ -330,6 +331,115 @@ window.toggleCheese = async (id, isActive) => {
   }
 }
 
+// カテゴリ（レシピ）読み込み
+async function loadRecipes() {
+  const { data, error } = await supa
+    .from('recipes')
+    .select('id, name, description, is_active')
+    .order('name')
+  
+  if (error) {
+    alert('カテゴリ読み込みエラー: ' + error.message)
+    return
+  }
+
+  const list = $('#recipeList')
+  list.innerHTML = data.map(recipe => `
+    <div class="card bg-gray-50 space-y-2">
+      <div class="flex justify-between items-start">
+        <div class="flex-1">
+          <h4 class="font-semibold">${recipe.name}</h4>
+          ${recipe.description ? `<p class="text-sm text-gray-600">${recipe.description}</p>` : ''}
+          <span class="text-xs px-2 py-1 rounded ${recipe.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${recipe.is_active ? '有効' : '無効'}</span>
+        </div>
+        <div class="flex gap-1">
+          <button onclick="editRecipe('${recipe.id}')" class="btn text-xs">編集</button>
+          <button onclick="toggleRecipe('${recipe.id}', ${!recipe.is_active})" class="btn text-xs">
+            ${recipe.is_active ? '無効' : '有効'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('')
+}
+
+// カテゴリ追加/更新
+$('#addRecipe').onclick = async () => {
+  const name = $('#recipeName').value.trim()
+  if (!name) {
+    alert('カテゴリ名を入力してください')
+    return
+  }
+
+  const data = {
+    name,
+    description: $('#recipeDescription').value || null,
+    is_active: true
+  }
+
+  let error
+  if (editingRecipe) {
+    // 更新
+    const { error: updateError } = await supa
+      .from('recipes')
+      .update(data)
+      .eq('id', editingRecipe)
+    error = updateError
+  } else {
+    // 新規追加
+    const { error: insertError } = await supa.from('recipes').insert(data)
+    error = insertError
+  }
+
+  if (error) {
+    alert((editingRecipe ? '更新' : '追加') + 'に失敗: ' + error.message)
+  } else {
+    clearRecipeForm()
+    loadRecipes()
+  }
+}
+
+// カテゴリフォームクリア
+function clearRecipeForm() {
+  $('#recipeName').value = ''
+  $('#recipeDescription').value = ''
+  editingRecipe = null
+  $('#addRecipe').textContent = '追加'
+  $('#cancelRecipeEdit').style.display = 'none'
+}
+
+// カテゴリ編集
+window.editRecipe = async (id) => {
+  const { data } = await supa.from('recipes').select('*').eq('id', id).single()
+  if (data) {
+    $('#recipeName').value = data.name || ''
+    $('#recipeDescription').value = data.description || ''
+    editingRecipe = id
+    $('#addRecipe').textContent = '更新'
+    $('#cancelRecipeEdit').style.display = 'inline-flex'
+  }
+}
+
+// カテゴリ編集キャンセル
+$('#cancelRecipeEdit').onclick = () => {
+  clearRecipeForm()
+}
+
+// カテゴリの有効/無効切り替え
+window.toggleRecipe = async (id, isActive) => {
+  const { error } = await supa
+    .from('recipes')
+    .update({ is_active: isActive })
+    .eq('id', id)
+  
+  if (error) {
+    alert('更新に失敗: ' + error.message)
+  } else {
+    loadRecipes()
+  }
+}
+
 // 初期読み込み
+loadRecipes()
 loadPastas()
 loadCheeses()

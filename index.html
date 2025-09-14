@@ -8,19 +8,55 @@
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
-    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
       <a href="/" class="font-semibold">Pasta Logger</a>
-      <a href="/log-new.html" class="btn">新規記録</a>
-      <a href="/log-list.html" class="btn">履歴</a>
-      <a href="/manage.html" class="btn">管理</a>
-      <button id="themeToggle" class="ml-auto btn">🌓</button>
+      
+      <!-- スマホ用メニューボタン -->
+      <div class="flex items-center gap-2">
+        <button id="themeToggle" class="btn p-2">🌓</button>
+        <button id="menuToggle" class="btn p-2 md:hidden">☰</button>
+      </div>
+      
+      <!-- デスクトップ用メニュー -->
+      <div class="hidden md:flex items-center gap-3">
+        <a href="/log-new.html" class="btn">新規記録</a>
+        <a href="/log-list.html" class="btn">履歴</a>
+        <a href="/manage.html" class="btn">管理</a>
+      </div>
     </nav>
+    
+    <!-- スマホ用ドロップダウンメニュー -->
+    <div id="mobileMenu" class="hidden bg-white border-t md:hidden">
+      <div class="mx-auto max-w-3xl px-4 py-3 space-y-2">
+        <a href="/log-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📝 新規記録</a>
+        <a href="/log-list.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📋 履歴</a>
+        <a href="/manage.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">⚙️ 管理</a>
+      </div>
+    </div>
   </header>
 
   <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
-    <section class="card space-y-3">
-      <h1 class="text-2xl font-bold">ようこそ</h1>
-      <div class="flex gap-3 flex-wrap">
+    <section class="card space-y-4">
+      <h1 class="text-2xl font-bold italian-accent">ようこそ</h1>
+      
+      <!-- スマホ用：縦並びの大きなボタン -->
+      <div class="grid gap-3 sm:hidden">
+        <a class="btn btn-primary py-4 text-lg" href="/log-new.html">
+          <span>📝</span>
+          <span>新規記録</span>
+        </a>
+        <a class="btn py-3" href="/log-list.html">
+          <span>📋</span>
+          <span>履歴をすべて見る</span>
+        </a>
+        <a class="btn py-3" href="/manage.html">
+          <span>⚙️</span>
+          <span>データ管理</span>
+        </a>
+      </div>
+      
+      <!-- デスクトップ用：横並び -->
+      <div class="hidden sm:flex gap-3 flex-wrap">
         <a class="btn btn-primary" href="/log-new.html">新規記録</a>
         <a class="btn" href="/log-list.html">履歴をすべて見る</a>
         <a class="btn" href="/manage.html">データ管理</a>
@@ -28,7 +64,7 @@
     </section>
     
     <section id="recentLogs">
-      <h2 class="text-xl font-bold mb-4">最近の記録</h2>
+      <h2 class="text-xl font-bold mb-4 italian-accent">最近の記録</h2>
       <div id="logsList" class="space-y-3"></div>
     </section>
     
@@ -45,6 +81,23 @@
       localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light')
     }
     if (localStorage.getItem('theme') === 'dark') html.classList.add('dark')
+    
+    // モバイルメニューの切り替え
+    const menuToggle = document.getElementById('menuToggle')
+    const mobileMenu = document.getElementById('mobileMenu')
+    
+    if (menuToggle && mobileMenu) {
+      menuToggle.onclick = () => {
+        mobileMenu.classList.toggle('hidden')
+      }
+      
+      // メニュー外をクリックした時に閉じる
+      document.addEventListener('click', (e) => {
+        if (!menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
+          mobileMenu.classList.add('hidden')
+        }
+      })
+    }
     
     initAuthUI('#auth')
     

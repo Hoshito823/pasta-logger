@@ -60,11 +60,24 @@
     
     <div class="text-sm text-gray-500" id="saltPercentage"></div>
 
-    <div class="flex flex-wrap gap-2">
-      <button type="button" id="markB" class="btn">B(茹で開始)</button>
-      <button type="button" id="markU" class="btn">U(上げ)</button>
-      <button type="button" id="markC" class="btn">C(合わせ終了)</button>
-      <span id="marks" class="text-sm text-gray-600"></span>
+    <div class="space-y-3">
+      <!-- タイマー表示 -->
+      <div id="timerDisplay" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+        <div class="text-2xl font-bold text-blue-800" id="timerTime">8:00</div>
+        <div class="text-sm text-blue-600 mt-1">パスタ茹でタイマー</div>
+        <div class="flex gap-2 justify-center mt-2">
+          <button type="button" id="pauseTimer" class="btn text-sm">⏸️ 一時停止</button>
+          <button type="button" id="resumeTimer" class="btn text-sm hidden">▶️ 再開</button>
+          <button type="button" id="stopTimer" class="btn text-sm">⏹️ 停止</button>
+        </div>
+      </div>
+      
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="markB" class="btn">B(茹で開始)</button>
+        <button type="button" id="markU" class="btn">U(上げ)</button>
+        <button type="button" id="markC" class="btn">C(合わせ終了)</button>
+        <span id="marks" class="text-sm text-gray-600"></span>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,15 +94,19 @@
       </div>
       <div>
         <label class="label">堅さ</label>
-        <div class="flex gap-1" id="firmnessStars">
-          <button type="button" class="star-btn" data-rating="1">★</button>
-          <button type="button" class="star-btn" data-rating="2">★</button>
-          <button type="button" class="star-btn" data-rating="3">★</button>
-          <button type="button" class="star-btn" data-rating="4">★</button>
-          <button type="button" class="star-btn" data-rating="5">★</button>
+        <div class="flex gap-2 flex-wrap" id="firmnessButtons">
+          <button type="button" class="firmness-btn" data-rating="1">やわらかい</button>
+          <button type="button" class="firmness-btn" data-rating="2">少しやわらかい</button>
+          <button type="button" class="firmness-btn" data-rating="3">ちょうどよい</button>
+          <button type="button" class="firmness-btn" data-rating="4">少しかたい</button>
+          <button type="button" class="firmness-btn" data-rating="5">かたい</button>
         </div>
         <input id="firmness" name="firmness" type="hidden">
       </div>
+    </div>
+
+    <div><label class="label">レシピ参考</label>
+      <input id="recipeReference" name="recipeReference" type="text" class="input" placeholder="参考にしたレシピのURL、書籍名、動画リンクなど">
     </div>
 
     <div><label class="label">メモ</label>

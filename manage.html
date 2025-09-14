@@ -19,6 +19,25 @@
     <h2 class="text-xl font-bold">データ管理</h2>
     <div id="auth"></div>
 
+    <!-- カテゴリ管理 -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">カテゴリ（レシピ）</h3>
+      
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="recipeName" placeholder="カテゴリ名（例：カルボナーラ、ペペロンチーノ）" class="input">
+          <input id="recipeDescription" placeholder="説明（オプション）" class="input">
+        </div>
+        
+        <div class="flex gap-3">
+          <button id="addRecipe" class="btn btn-primary">追加</button>
+          <button id="cancelRecipeEdit" class="btn" style="display:none">キャンセル</button>
+        </div>
+      </div>
+
+      <div id="recipeList" class="space-y-2"></div>
+    </section>
+
     <!-- パスタ種類管理 -->
     <section class="card space-y-4">
       <h3 class="text-lg font-semibold">パスタの種類</h3>

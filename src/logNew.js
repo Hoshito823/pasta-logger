@@ -126,8 +126,133 @@ async function fillWithImages(selector, items, bucket) {
 }
 loadMasters()
 
-function stamp(k){ marks[k] = new Date().toISOString(); $('#marks').textContent = `B:${marks.B??'-'} U:${marks.U??'-'} C:${marks.C??'-'}` }
-$('#markB').onclick = ()=> stamp('B'); $('#markU').onclick = ()=> stamp('U'); $('#markC').onclick = ()=> stamp('C')
+// タイマー関連の変数
+let timerInterval = null
+let isPaused = false
+let remainingTime = 0
+
+function stamp(k){ 
+  marks[k] = new Date().toISOString(); 
+  $('#marks').textContent = `B:${marks.B??'-'} U:${marks.U??'-'} C:${marks.C??'-'}`
+  
+  // B(茹で開始)が押されたときにタイマー開始
+  if (k === 'B') {
+    startBoilTimer()
+  }
+}
+
+function startBoilTimer() {
+  // 既にタイマーが動いている場合は停止
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+  
+  // 茹で時間を秒で取得
+  remainingTime = parseInt($('#boilTime').value)
+  isPaused = false
+  
+  // タイマー表示を表示
+  $('#timerDisplay').classList.remove('hidden')
+  $('#pauseTimer').classList.remove('hidden')
+  $('#resumeTimer').classList.add('hidden')
+  
+  // タイマー開始
+  timerInterval = setInterval(updateTimer, 1000)
+  updateTimerDisplay()
+}
+
+function updateTimer() {
+  if (isPaused) return
+  
+  remainingTime--
+  updateTimerDisplay()
+  
+  if (remainingTime <= 0) {
+    // タイマー終了
+    clearInterval(timerInterval)
+    timerInterval = null
+    
+    // アラート音を鳴らす（可能な場合）
+    try {
+      // Web Audio APIでビープ音を生成
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      oscillator.frequency.value = 800 // 800Hz
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 1)
+    } catch (e) {
+      console.log('音声再生に失敗:', e)
+    }
+    
+    // 視覚的な通知
+    $('#timerTime').textContent = '茹で上がり！'
+    $('#timerTime').classList.add('text-red-600', 'animate-pulse')
+    $('#timerDisplay').classList.add('bg-red-50', 'border-red-200')
+    $('#timerDisplay').classList.remove('bg-blue-50', 'border-blue-200')
+    
+    // ブラウザ通知（許可されている場合）
+    if (Notification.permission === 'granted') {
+      new Notification('パスタ茹で上がり！', {
+        body: 'パスタの茹で時間が終了しました',
+        icon: '/vite.svg'
+      })
+    }
+    
+    alert('🍝 パスタの茹で時間が終了しました！')
+  }
+}
+
+function updateTimerDisplay() {
+  const minutes = Math.floor(remainingTime / 60)
+  const seconds = remainingTime % 60
+  $('#timerTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function pauseTimer() {
+  isPaused = true
+  $('#pauseTimer').classList.add('hidden')
+  $('#resumeTimer').classList.remove('hidden')
+}
+
+function resumeTimer() {
+  isPaused = false
+  $('#pauseTimer').classList.remove('hidden')
+  $('#resumeTimer').classList.add('hidden')
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+  $('#timerDisplay').classList.add('hidden')
+  $('#timerTime').classList.remove('text-red-600', 'animate-pulse')
+  $('#timerDisplay').classList.remove('bg-red-50', 'border-red-200')
+  $('#timerDisplay').classList.add('bg-blue-50', 'border-blue-200')
+  isPaused = false
+  remainingTime = 0
+}
+
+// イベントリスナーの設定
+$('#markB').onclick = ()=> stamp('B')
+$('#markU').onclick = ()=> stamp('U') 
+$('#markC').onclick = ()=> stamp('C')
+$('#pauseTimer').onclick = pauseTimer
+$('#resumeTimer').onclick = resumeTimer
+$('#stopTimer').onclick = stopTimer
+
+// 通知の許可を要求
+if (Notification.permission === 'default') {
+  Notification.requestPermission()
+}
 
 // 星評価の設定
 function setupStarRating(containerId, inputId) {
@@ -149,8 +274,29 @@ function setupStarRating(containerId, inputId) {
   })
 }
 
+// 堅さ評価の設定
+function setupFirmnessRating(containerId, inputId) {
+  const container = $(containerId)
+  const input = $(inputId)
+  const buttons = container.querySelectorAll('.firmness-btn')
+  
+  buttons.forEach((button) => {
+    button.onclick = (e) => {
+      e.preventDefault()
+      const rating = parseInt(button.dataset.rating)
+      input.value = rating
+      
+      // ボタンの表示を更新
+      buttons.forEach((b) => {
+        b.classList.remove('active')
+      })
+      button.classList.add('active')
+    }
+  })
+}
+
 setupStarRating('#overallStars', '#overall')
-setupStarRating('#firmnessStars', '#firmness')
+setupFirmnessRating('#firmnessButtons', '#firmness')
 
 // 茹で時間ステッパーの機能
 const boilTimeInput = $('#boilTime')
@@ -302,6 +448,7 @@ $('#logForm').onsubmit = async (e) => {
       firmness: $('#firmness').value ? Number($('#firmness').value) : null
     },
     feedback_text: feedbackText || null,
+    recipe_reference: $('#recipeReference').value || null,
   }
   
   console.log('挿入データ:', insertData)
