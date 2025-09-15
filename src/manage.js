@@ -61,7 +61,7 @@ async function loadPastas() {
     }
 
     const div = document.createElement('div')
-    div.className = `flex items-center justify-between p-3 border rounded-xl ${pasta.is_active ? 'bg-white' : 'bg-gray-100'}`
+    div.className = `flex items-center justify-between p-3 border rounded-xl bg-white`
     div.innerHTML = `
       <div class="flex items-center gap-3">
         ${imgUrl ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-lg border" />` : '<div class="w-12 h-12 bg-gray-200 rounded-lg border flex items-center justify-center text-gray-400 text-xs">画像なし</div>'}
@@ -75,13 +75,13 @@ async function loadPastas() {
         </div>
       </div>
       <div class="flex gap-2">
-        <button class="btn text-sm bg-blue-100 text-blue-600" 
+        <button class="btn text-sm bg-blue-100 text-blue-600"
                 onclick="editPasta('${pasta.id}')">
           編集
         </button>
-        <button class="btn text-sm ${pasta.is_active ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}" 
-                onclick="togglePasta('${pasta.id}', ${!pasta.is_active})">
-          ${pasta.is_active ? '無効化' : '有効化'}
+        <button class="btn text-sm bg-red-100 text-red-600"
+                onclick="deletePasta('${pasta.id}')">
+          削除
         </button>
       </div>
     `
@@ -114,7 +114,7 @@ async function loadCheeses() {
     }
 
     const div = document.createElement('div')
-    div.className = `flex items-center justify-between p-3 border rounded-xl ${cheese.is_active ? 'bg-white' : 'bg-gray-100'}`
+    div.className = `flex items-center justify-between p-3 border rounded-xl bg-white`
     div.innerHTML = `
       <div class="flex items-center gap-3 flex-1">
         ${imgUrl ? `<img src="${imgUrl}" class="w-12 h-12 object-cover rounded-lg border" />` : '<div class="w-12 h-12 bg-gray-200 rounded-lg border flex items-center justify-center text-gray-400 text-xs">画像なし</div>'}
@@ -128,13 +128,13 @@ async function loadCheeses() {
         </div>
       </div>
       <div class="flex gap-2">
-        <button class="btn text-sm bg-blue-100 text-blue-600" 
+        <button class="btn text-sm bg-blue-100 text-blue-600"
                 onclick="editCheese('${cheese.id}')">
           編集
         </button>
-        <button class="btn text-sm ${cheese.is_active ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}" 
-                onclick="toggleCheese('${cheese.id}', ${!cheese.is_active})">
-          ${cheese.is_active ? '無効化' : '有効化'}
+        <button class="btn text-sm bg-red-100 text-red-600"
+                onclick="deleteCheese('${cheese.id}')">
+          削除
         </button>
       </div>
     `
@@ -303,29 +303,33 @@ $('#cancelCheeseEdit').onclick = () => {
   clearCheeseForm()
 }
 
-// パスタの有効/無効切り替え
-window.togglePasta = async (id, isActive) => {
+// パスタの削除
+window.deletePasta = async (id) => {
+  if (!confirm('このパスタを削除しますか？')) return
+
   const { error } = await supa
     .from('pasta_kinds')
-    .update({ is_active: isActive })
+    .delete()
     .eq('id', id)
-  
+
   if (error) {
-    alert('更新に失敗: ' + error.message)
+    alert('削除に失敗: ' + error.message)
   } else {
     loadPastas()
   }
 }
 
-// チーズの有効/無効切り替え
-window.toggleCheese = async (id, isActive) => {
+// チーズの削除
+window.deleteCheese = async (id) => {
+  if (!confirm('このチーズを削除しますか？')) return
+
   const { error } = await supa
     .from('cheeses')
-    .update({ is_active: isActive })
+    .delete()
     .eq('id', id)
-  
+
   if (error) {
-    alert('更新に失敗: ' + error.message)
+    alert('削除に失敗: ' + error.message)
   } else {
     loadCheeses()
   }
@@ -335,7 +339,7 @@ window.toggleCheese = async (id, isActive) => {
 async function loadRecipes() {
   const { data, error } = await supa
     .from('recipes')
-    .select('id, name, description, is_active')
+    .select('id, name, is_active')
     .order('name')
   
   if (error) {
@@ -349,14 +353,10 @@ async function loadRecipes() {
       <div class="flex justify-between items-start">
         <div class="flex-1">
           <h4 class="font-semibold">${recipe.name}</h4>
-          ${recipe.description ? `<p class="text-sm text-gray-600">${recipe.description}</p>` : ''}
-          <span class="text-xs px-2 py-1 rounded ${recipe.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${recipe.is_active ? '有効' : '無効'}</span>
         </div>
         <div class="flex gap-1">
-          <button onclick="editRecipe('${recipe.id}')" class="btn text-xs">編集</button>
-          <button onclick="toggleRecipe('${recipe.id}', ${!recipe.is_active})" class="btn text-xs">
-            ${recipe.is_active ? '無効' : '有効'}
-          </button>
+          <button onclick="editRecipe('${recipe.id}')" class="btn text-xs bg-blue-100 text-blue-600">編集</button>
+          <button onclick="deleteRecipe('${recipe.id}')" class="btn text-xs bg-red-100 text-red-600">削除</button>
         </div>
       </div>
     </div>
@@ -373,7 +373,6 @@ $('#addRecipe').onclick = async () => {
 
   const data = {
     name,
-    description: $('#recipeDescription').value || null,
     is_active: true
   }
 
@@ -402,7 +401,6 @@ $('#addRecipe').onclick = async () => {
 // カテゴリフォームクリア
 function clearRecipeForm() {
   $('#recipeName').value = ''
-  $('#recipeDescription').value = ''
   editingRecipe = null
   $('#addRecipe').textContent = '追加'
   $('#cancelRecipeEdit').style.display = 'none'
@@ -413,7 +411,6 @@ window.editRecipe = async (id) => {
   const { data } = await supa.from('recipes').select('*').eq('id', id).single()
   if (data) {
     $('#recipeName').value = data.name || ''
-    $('#recipeDescription').value = data.description || ''
     editingRecipe = id
     $('#addRecipe').textContent = '更新'
     $('#cancelRecipeEdit').style.display = 'inline-flex'
@@ -425,15 +422,17 @@ $('#cancelRecipeEdit').onclick = () => {
   clearRecipeForm()
 }
 
-// カテゴリの有効/無効切り替え
-window.toggleRecipe = async (id, isActive) => {
+// カテゴリの削除
+window.deleteRecipe = async (id) => {
+  if (!confirm('このカテゴリを削除しますか？')) return
+
   const { error } = await supa
     .from('recipes')
-    .update({ is_active: isActive })
+    .delete()
     .eq('id', id)
-  
+
   if (error) {
-    alert('更新に失敗: ' + error.message)
+    alert('削除に失敗: ' + error.message)
   } else {
     loadRecipes()
   }
