@@ -19,78 +19,45 @@
     <h2 class="text-xl font-bold">データ管理</h2>
     <div id="auth"></div>
 
-    <!-- カテゴリ管理 -->
+    <!-- 管理メニュー -->
     <section class="card space-y-4">
-      <h3 class="text-lg font-semibold">カテゴリ（レシピ）</h3>
-      
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 gap-3">
-          <input id="recipeName" placeholder="カテゴリ名（例：カルボナーラ、ペペロンチーノ）" class="input">
-        </div>
-        
-        <div class="flex gap-3">
-          <button id="addRecipe" class="btn btn-primary">追加</button>
-          <button id="cancelRecipeEdit" class="btn" style="display:none">キャンセル</button>
-        </div>
+      <h3 class="text-lg font-semibold">管理メニュー</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/manage-category.html" class="card bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-center p-4">
+          <div class="text-2xl mb-2">🍝</div>
+          <div class="font-semibold">カテゴリ管理</div>
+          <div class="text-sm text-gray-600">レシピカテゴリの追加・編集・削除</div>
+        </a>
+        <a href="/manage-pasta.html" class="card bg-yellow-50 hover:bg-yellow-100 transition-colors cursor-pointer text-center p-4">
+          <div class="text-2xl mb-2">🍜</div>
+          <div class="font-semibold">パスタ種類管理</div>
+          <div class="text-sm text-gray-600">パスタの追加・編集・削除・絞り込み</div>
+        </a>
+        <a href="/manage-cheese.html" class="card bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer text-center p-4">
+          <div class="text-2xl mb-2">🧀</div>
+          <div class="font-semibold">チーズ種類管理</div>
+          <div class="text-sm text-gray-600">チーズの追加・編集・削除・絞り込み</div>
+        </a>
       </div>
-
-      <div id="recipeList" class="space-y-2"></div>
     </section>
 
-    <!-- パスタ種類管理 -->
+    <!-- 簡易統計 -->
     <section class="card space-y-4">
-      <h3 class="text-lg font-semibold">パスタの種類</h3>
-      
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input id="pastaBrand" placeholder="ブランド" class="input">
-          <input id="pastaPurchaseLocation" placeholder="購入場所" class="input">
+      <h3 class="text-lg font-semibold">データ統計</h3>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold text-blue-600" id="categoryCount">-</div>
+          <div class="text-sm text-gray-600">カテゴリ</div>
         </div>
-        
-        <div class="space-y-2">
-          <label class="label">太さ(mm)</label>
-          <input id="pastaThickness" placeholder="太さ(mm)" type="number" step="0.1" min="1.2" max="2" class="input">
-          <div class="grid grid-cols-4 gap-1 text-xs">
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.2">1.2mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.3">1.3mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.4">1.4mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.5">1.5mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.6">1.6mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.7">1.7mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="1.8">1.8mm</button>
-            <button type="button" class="thickness-btn btn py-1 px-1" data-thickness="2.0">2.0mm</button>
-          </div>
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold text-yellow-600" id="pastaCount">-</div>
+          <div class="text-sm text-gray-600">パスタ種類</div>
         </div>
-        
-        <div class="flex gap-3">
-          <input id="pastaImage" type="file" accept="image/*" class="input flex-1">
-          <button id="addPasta" class="btn btn-primary">追加</button>
-          <button id="cancelPastaEdit" class="btn" style="display:none">キャンセル</button>
+        <div class="p-3 bg-gray-50 rounded-lg">
+          <div class="text-2xl font-bold text-orange-600" id="cheeseCount">-</div>
+          <div class="text-sm text-gray-600">チーズ種類</div>
         </div>
       </div>
-
-      <div id="pastaList" class="space-y-2"></div>
-    </section>
-
-    <!-- チーズ種類管理 -->
-    <section class="card space-y-4">
-      <h3 class="text-lg font-semibold">チーズの種類</h3>
-      
-      <div class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input id="cheeseName" placeholder="チーズ名" class="input">
-          <input id="cheeseManufacturer" placeholder="メーカー" class="input">
-          <input id="cheesePurchaseLocation" placeholder="購入場所" class="input">
-        </div>
-        
-        <div class="flex gap-3">
-          <input id="cheeseImage" type="file" accept="image/*" class="input flex-1">
-          <button id="addCheese" class="btn btn-primary">追加</button>
-          <button id="cancelCheeseEdit" class="btn" style="display:none">キャンセル</button>
-        </div>
-      </div>
-
-      <div id="cheeseList" class="space-y-2"></div>
     </section>
   </main>
 
