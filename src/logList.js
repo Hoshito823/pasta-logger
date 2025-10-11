@@ -50,8 +50,9 @@ async function reload() {
 
   let q = supa.from('pasta_logs')
     .select(`
-      id,taken_at,photo_url,photo_path,recipe_id,pasta_kind_id,rating_core,feedback_text,
-      pasta_kinds!inner(id,brand,thickness_mm)
+      id,taken_at,photo_url,photo_path,recipe_id,pasta_kind_id,rating_core,feedback_text,title,
+      pasta_kinds!inner(id,brand,thickness_mm),
+      recipes(id,name)
     `)
     .order('rating_core->>overall', { ascending: false })
     .order('taken_at', { ascending: false })
@@ -71,6 +72,8 @@ async function reload() {
     const star = row.rating_core?.overall ?? '-'
     const url = await resolvePhotoUrl(row)
     const img = url ? `<img src="${url}" class="w-32 h-24 object-cover rounded-lg border mb-2" />` : ''
+    const title = row.title || row.recipes?.name || '料理名未登録'
+    const recipeName = row.recipes?.name || '料理名未登録'
     const pastaInfo = row.pasta_kinds ? `${row.pasta_kinds.brand || 'ブランド不明'} (${row.pasta_kinds.thickness_mm}mm)` : ''
 
     const card = document.createElement('div'); card.className='card p-0'
@@ -80,8 +83,10 @@ async function reload() {
           ${img}
           <div class="flex-1">
             <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
-            <div class="font-semibold">★${star}</div>
-            ${pastaInfo ? `<div class="text-sm text-blue-600 mb-1">${pastaInfo}</div>` : ''}
+            <div class="text-lg font-bold text-gray-900 mb-1">${title}</div>
+            ${recipeName !== title ? `<div class="text-sm text-gray-500 mb-1">カテゴリ: ${recipeName}</div>` : ''}
+            ${pastaInfo ? `<div class="text-sm text-gray-600 mb-1">${pastaInfo}</div>` : ''}
+            <div class="text-sm text-amber-600 mb-1">★${star}</div>
             <div class="text-gray-700">${(row.feedback_text||'').slice(0,160)}</div>
           </div>
         </div>

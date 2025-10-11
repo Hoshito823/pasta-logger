@@ -20,7 +20,6 @@
       <!-- デスクトップ用メニュー -->
       <div class="hidden md:flex items-center gap-3">
         <a href="/log-new.html" class="btn">新規記録</a>
-        <a href="/log-list.html" class="btn">履歴</a>
         <a href="/manage.html" class="btn">管理</a>
       </div>
     </nav>
@@ -29,7 +28,6 @@
     <div id="mobileMenu" class="hidden bg-white border-t md:hidden">
       <div class="mx-auto max-w-3xl px-4 py-3 space-y-2">
         <a href="/log-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📝 新規記録</a>
-        <a href="/log-list.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📋 履歴</a>
         <a href="/manage.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">⚙️ 管理</a>
       </div>
     </div>
@@ -45,10 +43,6 @@
           <span>📝</span>
           <span>新規記録（調理タイマー付き）</span>
         </a>
-        <a class="btn py-3" href="/log-list.html">
-          <span>📋</span>
-          <span>履歴をすべて見る</span>
-        </a>
         <a class="btn py-3" href="/manage.html">
           <span>⚙️</span>
           <span>データ管理</span>
@@ -58,17 +52,45 @@
       <!-- デスクトップ用：横並び -->
       <div class="hidden sm:flex gap-3 flex-wrap">
         <a class="btn btn-primary" href="/log-new.html">📝 新規記録（調理タイマー付き）</a>
-        <a class="btn" href="/log-list.html">履歴をすべて見る</a>
         <a class="btn" href="/manage.html">データ管理</a>
       </div>
     </section>
-    
-    <section id="recentLogs">
-      <h2 class="text-xl font-bold mb-4 italian-accent">最近の記録</h2>
-      <div id="logsList" class="space-y-3"></div>
-    </section>
-    
+
     <section id="auth"></section>
+
+    <!-- 絞り込みフィルター -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">絞り込み</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="label">カテゴリ</label>
+          <select id="recipeFilter" class="input"></select>
+        </div>
+        <div>
+          <label class="label">パスタ種類</label>
+          <select id="pastaKindFilter" class="input"></select>
+        </div>
+        <div>
+          <label class="label">太さ範囲</label>
+          <div class="flex gap-2 items-center">
+            <input id="thicknessMin" type="number" step="0.1" min="1.0" max="3.0" placeholder="最小" class="input text-sm">
+            <span class="text-gray-500">〜</span>
+            <input id="thicknessMax" type="number" step="0.1" min="1.0" max="3.0" placeholder="最大" class="input text-sm">
+            <span class="text-sm text-gray-500">mm</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="reload" class="btn btn-primary">絞り込み</button>
+        <button id="clearFilter" class="btn">クリア</button>
+      </div>
+    </section>
+
+    <!-- 履歴一覧 -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold">パスタ記録</h2>
+      <div id="recentLogs" class="space-y-3"></div>
+    </section>
   </main>
 
   <script type="module">
@@ -98,54 +120,137 @@
         }
       })
     }
-    
+
     initAuthUI('#auth')
-    
-    // 最近の記録を表示
+
+    // レシピとパスタ種類を読み込む
+    async function loadFilters() {
+      const session = await supa.auth.getSession()
+      if (!session?.data?.session) return
+
+      // レシピ一覧を取得
+      const { data: recipes } = await supa.from('recipes')
+        .select('id,name').eq('is_active', true).order('name')
+      const recipeSelect = document.querySelector('#recipeFilter')
+      recipeSelect.innerHTML = '<option value="">すべて</option>'
+      recipes?.forEach(r => {
+        const opt = document.createElement('option')
+        opt.value = r.id
+        opt.textContent = r.name
+        recipeSelect.appendChild(opt)
+      })
+
+      // パスタ種類一覧を取得
+      const { data: pastaKinds } = await supa.from('pasta_kinds')
+        .select('id,brand,thickness_mm').eq('is_active', true).order('brand').order('thickness_mm')
+      const pastaSelect = document.querySelector('#pastaKindFilter')
+      pastaSelect.innerHTML = '<option value="">すべて</option>'
+      pastaKinds?.forEach(p => {
+        const opt = document.createElement('option')
+        opt.value = p.id
+        opt.textContent = `${p.brand || 'ブランド不明'} (${p.thickness_mm}mm)`
+        pastaSelect.appendChild(opt)
+      })
+    }
+
+    // 履歴を読み込む（絞り込み機能付き）
     async function loadRecentLogs() {
-      try {
-        const { data } = await supa.from('pasta_logs')
-          .select('id,taken_at,photo_url,photo_path,rating_core,feedback_text')
-          .order('taken_at', { ascending: false })
-          .limit(5)
-        
-        const list = document.querySelector('#logsList')
-        if (!data?.length) {
-          list.innerHTML = '<p class="text-gray-500">記録がありません</p>'
-          return
+      const session = await supa.auth.getSession()
+      if (!session?.data?.session) return
+
+      const recipeId = document.querySelector('#recipeFilter').value
+      const pastaKindId = document.querySelector('#pastaKindFilter').value
+      const thicknessMin = document.querySelector('#thicknessMin').value
+      const thicknessMax = document.querySelector('#thicknessMax').value
+
+      let query = supa.from('pasta_logs')
+        .select(`
+          id,taken_at,photo_url,photo_path,recipe_id,pasta_kind_id,rating_core,feedback_text,title,
+          pasta_kinds!inner(id,brand,thickness_mm),
+          recipes(id,name)
+        `)
+        .order('rating_core->>overall', { ascending: false })
+        .order('taken_at', { ascending: false })
+        .limit(50)
+
+      // フィルター適用
+      if (recipeId) query = query.eq('recipe_id', recipeId)
+      if (pastaKindId) query = query.eq('pasta_kind_id', pastaKindId)
+      if (thicknessMin) query = query.gte('pasta_kinds.thickness_mm', parseFloat(thicknessMin))
+      if (thicknessMax) query = query.lte('pasta_kinds.thickness_mm', parseFloat(thicknessMax))
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('履歴の読み込みエラー:', error)
+        return
+      }
+
+      const container = document.querySelector('#recentLogs')
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-8">まだ記録がありません</p>'
+        return
+      }
+
+      container.innerHTML = ''
+      for (const row of data) {
+        const star = row.rating_core?.overall ?? '-'
+        let photoUrl = row.photo_url
+        if (!photoUrl && row.photo_path) {
+          const { data: urlData, error: urlError } = await supa.storage
+            .from('pasta-photos')
+            .createSignedUrl(row.photo_path, 3600)
+          if (!urlError) photoUrl = urlData.signedUrl
         }
-        
-        list.innerHTML = ''
-        for (const row of data) {
-          const star = row.rating_core?.overall ?? '-'
-          let imgUrl = null
-          if (row.photo_url) imgUrl = row.photo_url
-          else if (row.photo_path) {
-            const { data: urlData } = await supa.storage.from('pasta-photos').createSignedUrl(row.photo_path, 3600)
-            if (urlData) imgUrl = urlData.signedUrl
-          }
-          
-          const img = imgUrl ? `<img src="${imgUrl}" class="w-20 h-16 object-cover rounded-lg border" />` : ''
-          const card = document.createElement('div')
-          card.className = 'card p-0'
-          card.innerHTML = `
-            <a class="block p-4 hover:bg-gray-50 rounded-2xl" href="/log-detail.html?id=${row.id}">
-              <div class="flex gap-3">
-                ${img}
-                <div class="flex-1">
-                  <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
-                  <div class="font-semibold">★${star}</div>
-                  <div class="text-gray-700">${(row.feedback_text||'').slice(0,100)}</div>
-                </div>
+
+        const img = photoUrl ? `<img src="${photoUrl}" class="w-24 h-20 object-cover rounded-lg border" />` : ''
+        const title = row.title || row.recipes?.name || '料理名未登録'
+        const recipeName = row.recipes?.name || '料理名未登録'
+        const pastaInfo = row.pasta_kinds ? `${row.pasta_kinds.brand || 'ブランド不明'} (${row.pasta_kinds.thickness_mm}mm)` : ''
+
+        const card = document.createElement('div')
+        card.className = 'card p-0'
+        card.innerHTML = `
+          <a class="block p-4 hover:bg-gray-50 rounded-2xl" href="/log-detail.html?id=${row.id}">
+            <div class="flex gap-3">
+              ${img}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
+                <div class="text-lg font-bold text-gray-900 mb-1 truncate">${title}</div>
+                ${recipeName !== title ? `<div class="text-sm text-gray-500 mb-1">${recipeName}</div>` : ''}
+                ${pastaInfo ? `<div class="text-sm text-gray-600 mb-1">${pastaInfo}</div>` : ''}
+                <div class="text-sm text-amber-600 mb-1">★${star}</div>
+                <div class="text-gray-700 text-sm line-clamp-2">${(row.feedback_text||'').slice(0,100)}</div>
               </div>
-            </a>`
-          list.appendChild(card)
-        }
-      } catch (error) {
-        console.log('Recent logs load error:', error)
+            </div>
+          </a>`
+        container.appendChild(card)
       }
     }
-    
+
+    // フィルタークリア機能
+    function clearFilters() {
+      document.querySelector('#recipeFilter').value = ''
+      document.querySelector('#pastaKindFilter').value = ''
+      document.querySelector('#thicknessMin').value = ''
+      document.querySelector('#thicknessMax').value = ''
+      loadRecentLogs()
+    }
+
+    // ボタンイベント設定
+    document.querySelector('#reload').onclick = loadRecentLogs
+    document.querySelector('#clearFilter').onclick = clearFilters
+
+    // 認証後にフィルターと履歴を読み込む
+    supa.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        loadFilters()
+        loadRecentLogs()
+      }
+    })
+
+    // 初回読み込み
+    loadFilters()
     loadRecentLogs()
   </script>
 </body>
