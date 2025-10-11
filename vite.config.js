@@ -8,7 +8,10 @@ export default defineConfig({
         'log-new': './log-new.html',
         'log-list': './log-list.html',
         'log-detail': './log-detail.html',
-        'manage': './manage.html'
+        'manage': './manage.html',
+        'manage-category': './manage-category.html',
+        'manage-cheese': './manage-cheese.html',
+        'manage-pasta': './manage-pasta.html'
       }
     }
   },
