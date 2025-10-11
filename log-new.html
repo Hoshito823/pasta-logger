@@ -43,16 +43,41 @@
       <div><label class="label">チーズ（複数可）</label><select id="cheese" name="cheese" class="input" multiple size="3"></select></div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div>
-        <label class="label">茹で時間</label>
+    <!-- 茹で時間設定 -->
+    <div>
+      <label class="label">茹で時間</label>
+      <div class="space-y-2">
+        <!-- 分と秒の個別設定 -->
         <div class="flex items-center gap-2">
-          <button type="button" id="boilTimeMinus" class="btn w-8 h-8 flex items-center justify-center p-0">-</button>
-          <input id="boilTime" name="boilTime" type="number" min="60" max="1200" step="10" value="480" class="input text-center flex-1" readonly>
-          <button type="button" id="boilTimePlus" class="btn w-8 h-8 flex items-center justify-center p-0">+</button>
+          <div class="flex items-center gap-1 flex-1">
+            <button type="button" id="boilMinuteMinus" class="btn w-6 h-6 flex items-center justify-center p-0 text-xs">-</button>
+            <input id="boilMinutes" type="number" min="0" max="9" value="8" class="input text-center w-12 text-sm">
+            <button type="button" id="boilMinutePlus" class="btn w-6 h-6 flex items-center justify-center p-0 text-xs">+</button>
+            <span class="text-xs text-gray-600">分</span>
+          </div>
+          <div class="flex items-center gap-1 flex-1">
+            <button type="button" id="boilSecondMinus" class="btn w-6 h-6 flex items-center justify-center p-0 text-xs">-</button>
+            <input id="boilSeconds" type="number" min="0" max="59" step="10" value="0" class="input text-center w-12 text-sm">
+            <button type="button" id="boilSecondPlus" class="btn w-6 h-6 flex items-center justify-center p-0 text-xs">+</button>
+            <span class="text-xs text-gray-600">秒</span>
+          </div>
         </div>
-        <div class="text-center text-sm text-gray-600 mt-1"><span id="boilTimeDisplay">8分00秒</span></div>
+        <!-- プリセットボタン -->
+        <div class="grid grid-cols-3 gap-1 text-xs">
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="6" data-seconds="30">6:30</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="7" data-seconds="0">7:00</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="8" data-seconds="0">8:00</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="9" data-seconds="0">9:00</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="10" data-seconds="0">10:00</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="12" data-seconds="0">12:00</button>
+        </div>
+        <!-- 隠しフィールド（従来の秒単位での値を保持） -->
+        <input id="boilTime" name="boilTime" type="hidden" value="480">
       </div>
+    </div>
+
+    <!-- 水量・塩・茹で汁 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div><label class="label">水量(L)</label><input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="1.0"></div>
       <div><label class="label">塩(g)</label><input id="saltAmount" name="saltAmount" type="number" step="1" class="input" placeholder="12"></div>
       <div><label class="label">茹で汁(お玉0.5)</label><input id="ladle" name="ladle" type="number" step="0.5" class="input" placeholder="1.0"></div>
@@ -60,23 +85,70 @@
     
     <div class="text-sm text-gray-500" id="saltPercentage"></div>
 
-    <div class="space-y-3">
+    <!-- 調理工程記録セクション -->
+    <div class="card space-y-4">
+      <h3 class="font-semibold">調理工程記録</h3>
+
       <!-- タイマー表示 -->
       <div id="timerDisplay" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-        <div class="text-2xl font-bold text-blue-800" id="timerTime">8:00</div>
-        <div class="text-sm text-blue-600 mt-1">パスタ茹でタイマー</div>
-        <div class="flex gap-2 justify-center mt-2">
-          <button type="button" id="pauseTimer" class="btn text-sm">⏸️ 一時停止</button>
-          <button type="button" id="resumeTimer" class="btn text-sm hidden">▶️ 再開</button>
-          <button type="button" id="stopTimer" class="btn text-sm">⏹️ 停止</button>
-        </div>
+        <div class="text-2xl font-bold text-blue-800" id="timerTime">準備中</div>
+        <div class="text-sm text-blue-600 mt-1" id="timerStatus">調理開始準備</div>
       </div>
-      
-      <div class="flex flex-wrap gap-2">
-        <button type="button" id="markB" class="btn">B(茹で開始)</button>
-        <button type="button" id="markU" class="btn">U(上げ)</button>
-        <button type="button" id="markC" class="btn">C(合わせ終了)</button>
-        <span id="marks" class="text-sm text-gray-600"></span>
+
+      <!-- 工程記録ボタン -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <button type="button" id="btnSauceStart" class="process-btn btn-outline border-orange-300 text-orange-700 hover:bg-orange-50 p-3 rounded-xl transition-all" data-process="sauce_start">
+          <div class="text-sm font-medium">① ソース開始</div>
+          <div id="timeSauceStart" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+
+        <button type="button" id="btnPastaStart" class="process-btn btn-outline border-blue-300 text-blue-700 hover:bg-blue-50 p-3 rounded-xl transition-all" data-process="pasta_start">
+          <div class="text-sm font-medium">② 麺投入</div>
+          <div id="timePastaStart" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+
+        <button type="button" id="btnPastaFinish" class="process-btn btn-outline border-blue-300 text-blue-700 hover:bg-blue-50 p-3 rounded-xl transition-all" data-process="pasta_finish">
+          <div class="text-sm font-medium">③ 茹で上がり</div>
+          <div id="timePastaFinish" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+
+        <button type="button" id="btnSauceFinish" class="process-btn btn-outline border-orange-300 text-orange-700 hover:bg-orange-50 p-3 rounded-xl transition-all" data-process="sauce_finish">
+          <div class="text-sm font-medium">④ ソース完成</div>
+          <div id="timeSauceFinish" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+
+        <button type="button" id="btnCombineStart" class="process-btn btn-outline border-purple-300 text-purple-700 hover:bg-purple-50 p-3 rounded-xl transition-all" data-process="combine_start">
+          <div class="text-sm font-medium">⑤ 合わせ開始</div>
+          <div id="timeCombineStart" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+
+        <button type="button" id="btnCompletion" class="process-btn btn-outline border-green-300 text-green-700 hover:bg-green-50 p-3 rounded-xl transition-all" data-process="completion">
+          <div class="text-sm font-medium">⑥ 完成</div>
+          <div id="timeCompletion" class="text-xs text-gray-500 mt-1">未記録</div>
+        </button>
+      </div>
+
+      <!-- 時間分析表示（調理完了後） -->
+      <div id="timeAnalysis" class="hidden bg-green-50 p-4 rounded-xl">
+        <h4 class="font-semibold text-green-700 mb-2">時間分析</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div>
+            <span class="text-gray-600">ソース待機:</span>
+            <span id="analysisSauceWait" class="font-medium">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">麺待機:</span>
+            <span id="analysisPastaWait" class="font-medium">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">合わせ時間:</span>
+            <span id="analysisCombineDuration" class="font-medium">-</span>
+          </div>
+          <div>
+            <span class="text-gray-600">総調理時間:</span>
+            <span id="analysisTotalTime" class="font-medium text-blue-600">-</span>
+          </div>
+        </div>
       </div>
     </div>
 
