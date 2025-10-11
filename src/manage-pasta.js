@@ -34,6 +34,7 @@ document.querySelectorAll('.thickness-btn').forEach(btn => {
   }
 })
 
+
 // パスタ種類の読み込み
 async function loadPastas(filter = {}) {
   let query = supa
