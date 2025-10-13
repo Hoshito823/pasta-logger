@@ -637,12 +637,9 @@ $('#logForm').onsubmit = async (e) => {
   const photo = await uploadPhoto(photoFile, userId)
   const cheeseSel = Array.from($('#cheese').selectedOptions).map(o=>o.value)
 
-  // パスタ名をメモ欄に含める一時的な対応
-  let feedbackText = $('#feedback').value || ''
-  const pastaName = $('#pastaName').value
-  if (pastaName) {
-    feedbackText = `【${pastaName}】\n${feedbackText}`.trim()
-  }
+  // パスタ名とメモを別々に取得
+  const pastaName = $('#pastaName').value || null
+  const feedbackText = $('#feedback').value || null
 
   // 塩分濃度を計算
   const water = parseFloat($('#waterAmount').value) || null
@@ -662,7 +659,8 @@ $('#logForm').onsubmit = async (e) => {
       overall: $('#overall').value ? Number($('#overall').value) : null,
       firmness: $('#firmness').value ? Number($('#firmness').value) : null
     },
-    feedback_text: feedbackText || null,
+    title: pastaName,
+    feedback_text: feedbackText,
     recipe_reference: $('#recipeReference').value || null,
   }
   

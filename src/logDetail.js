@@ -63,17 +63,10 @@ async function resolvePhotoUrl(row){
 // 編集フォームの表示
 async function showEditForm() {
   if (!currentData) return
-  
-  // パスタ名をフィードバックテキストから抽出
-  let pastaName = ''
-  let feedbackText = currentData.feedback_text || ''
-  if (feedbackText && feedbackText.startsWith('【')) {
-    const match = feedbackText.match(/^【(.+?)】\n?(.*)$/s)
-    if (match) {
-      pastaName = match[1]
-      feedbackText = match[2]
-    }
-  }
+
+  // パスタ名とフィードバックテキストを取得
+  const pastaName = currentData.title || ''
+  const feedbackText = currentData.feedback_text || ''
 
   // チーズデータを取得
   let selectedCheeseIds = []
@@ -373,12 +366,9 @@ async function handleEditSubmit(e) {
 
     const cheeseSel = Array.from($('#cheese').selectedOptions).map(o => o.value)
 
-    // パスタ名をメモ欄に含める
-    let feedbackText = $('#feedback').value || ''
-    const pastaName = $('#pastaName').value
-    if (pastaName) {
-      feedbackText = `【${pastaName}】\n${feedbackText}`.trim()
-    }
+    // パスタ名とメモを別々に取得
+    const pastaName = $('#pastaName').value || null
+    const feedbackText = $('#feedback').value || null
 
     // 塩分濃度を計算
     const water = parseFloat($('#waterAmount').value) || null
@@ -397,7 +387,8 @@ async function handleEditSubmit(e) {
         overall: $('#overall').value ? Number($('#overall').value) : null,
         firmness: $('#firmness').value ? Number($('#firmness').value) : null
       },
-      feedback_text: feedbackText || null,
+      title: pastaName,
+      feedback_text: feedbackText,
       recipe_reference: $('#recipeReference').value || null,
     }
 
@@ -428,9 +419,10 @@ async function load(){
   const { data, error } = await supa
     .from('pasta_logs')
     .select(`
-      id, taken_at, photo_url, photo_path, feedback_text, rating_core,
+      id, taken_at, photo_url, photo_path, title, feedback_text, rating_core,
       boil_salt_pct, ladle_half_units, boil_start_ts, up_ts, combine_end_ts,
-      recipe_reference, recipe:recipes(id,name), pasta:pasta_kinds(id,brand,thickness_mm)
+      recipe_reference, recipe:recipes(id,name), pasta:pasta_kinds(id,brand,thickness_mm),
+      cooking_process_times, cooking_start_time, cooking_total_seconds
     `)
     .eq('id', id)
     .single()
@@ -457,15 +449,96 @@ async function load(){
   }
 
   const imgUrl = await resolvePhotoUrl(data)
-  
-  // メモ欄からパスタ名を抽出
-  let pastaName = ''
-  let displayMemo = data.feedback_text || ''
-  if (data.feedback_text && data.feedback_text.startsWith('【')) {
-    const match = data.feedback_text.match(/^【(.+?)】\n?(.*)$/s)
-    if (match) {
-      pastaName = match[1]
-      displayMemo = match[2]
+
+  // パスタ名とメモを取得
+  const pastaName = data.title || ''
+  const displayMemo = data.feedback_text || ''
+
+  // 調理工程記録の表示HTMLを生成
+  let cookingProcessHtml = ''
+  if (data.cooking_process_times && Object.keys(data.cooking_process_times).length > 0) {
+    const processLabels = {
+      'sauce_start': 'ソース開始',
+      'pasta_start': '麺投入',
+      'pasta_finish': '茹で上がり',
+      'sauce_finish': 'ソース完成',
+      'combine_start': '合わせ開始',
+      'completion': '完成'
+    }
+
+    const processOrder = ['sauce_start', 'pasta_start', 'pasta_finish', 'sauce_finish', 'combine_start', 'completion']
+    const processItems = processOrder
+      .filter(key => data.cooking_process_times[key])
+      .map(key => {
+        const timestamp = new Date(data.cooking_process_times[key])
+        const timeStr = timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        return `<div class="flex justify-between items-center py-1 border-b last:border-b-0">
+          <span class="text-gray-700">${processLabels[key] || key}</span>
+          <span class="font-medium">${timeStr}</span>
+        </div>`
+      })
+      .join('')
+
+    cookingProcessHtml = `
+      <div class="card">
+        <div class="font-semibold mb-2">調理工程記録</div>
+        ${processItems}
+      </div>
+    `
+  }
+
+  // 時間分析の表示HTMLを生成
+  let timeAnalysisHtml = ''
+  if (data.cooking_process_times) {
+    const times = data.cooking_process_times
+    const analyses = []
+
+    // ソース待機時間（ソース完成から茹で上がりまで）
+    if (times.sauce_finish && times.pasta_finish) {
+      const sauceFinish = new Date(times.sauce_finish)
+      const pastaFinish = new Date(times.pasta_finish)
+      const waitSec = Math.max(0, Math.floor((pastaFinish - sauceFinish) / 1000))
+      const mins = Math.floor(waitSec / 60)
+      const secs = waitSec % 60
+      analyses.push(`<div><span class="text-gray-600">ソース待機:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
+    }
+
+    // 麺待機時間（茹で上がりから合わせ開始まで）
+    if (times.pasta_finish && times.combine_start) {
+      const pastaFinish = new Date(times.pasta_finish)
+      const combineStart = new Date(times.combine_start)
+      const waitSec = Math.floor((combineStart - pastaFinish) / 1000)
+      const mins = Math.floor(waitSec / 60)
+      const secs = waitSec % 60
+      analyses.push(`<div><span class="text-gray-600">麺待機:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
+    }
+
+    // 合わせ時間（合わせ開始から完成まで）
+    if (times.combine_start && times.completion) {
+      const combineStart = new Date(times.combine_start)
+      const completion = new Date(times.completion)
+      const duration = Math.floor((completion - combineStart) / 1000)
+      const mins = Math.floor(duration / 60)
+      const secs = duration % 60
+      analyses.push(`<div><span class="text-gray-600">合わせ時間:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
+    }
+
+    // 総調理時間
+    if (data.cooking_total_seconds) {
+      const mins = Math.floor(data.cooking_total_seconds / 60)
+      const secs = data.cooking_total_seconds % 60
+      analyses.push(`<div><span class="text-gray-600">総調理時間:</span> <span class="font-medium text-blue-600">${mins}分${secs}秒</span></div>`)
+    }
+
+    if (analyses.length > 0) {
+      timeAnalysisHtml = `
+        <div class="card bg-green-50">
+          <div class="font-semibold mb-2 text-green-700">時間分析</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            ${analyses.join('')}
+          </div>
+        </div>
+      `
     }
   }
 
@@ -501,11 +574,15 @@ async function load(){
         <div>C(合わせ終了)：${fmt(data.combine_end_ts)}</div>
       </div>
 
+      ${cookingProcessHtml}
+
+      ${timeAnalysisHtml}
+
       ${data.recipe_reference ? `
       <div class="card">
         <div class="font-semibold mb-2">レシピ参考</div>
-        <div class="break-all">${data.recipe_reference.startsWith('http') ? 
-          `<a href="${data.recipe_reference}" target="_blank" class="text-blue-600 hover:underline">${data.recipe_reference}</a>` : 
+        <div class="break-all">${data.recipe_reference.startsWith('http') ?
+          `<a href="${data.recipe_reference}" target="_blank" class="text-blue-600 hover:underline">${data.recipe_reference}</a>` :
           data.recipe_reference
         }</div>
       </div>` : ''}
