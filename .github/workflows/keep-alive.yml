@@ -1,0 +1,52 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Run daily at 3:00 AM UTC (12:00 PM JST)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Pinging Supabase to keep database active..."
+
+          # Extract project reference from URL
+          PROJECT_URL="${{ secrets.VITE_SUPABASE_URL }}"
+          ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+
+          # Perform lightweight query to pasta_logs table
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            "${PROJECT_URL}/rest/v1/pasta_logs?select=id&limit=1" \
+            -H "apikey: ${ANON_KEY}" \
+            -H "Authorization: Bearer ${ANON_KEY}")
+
+          # Extract HTTP status code (last line)
+          http_code=$(echo "$response" | tail -n1)
+
+          # Extract response body (all but last line)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response status: $http_code"
+          echo "Response body: $body"
+
+          # Check if request was successful (2xx status codes)
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Keep-alive ping successful"
+            exit 0
+          else
+            echo "⚠️ Keep-alive ping failed with status $http_code"
+            echo "This may indicate the database is paused or there's a connection issue"
+            exit 1
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Keep-alive check failed"
+          echo "Please check your Supabase project status manually"

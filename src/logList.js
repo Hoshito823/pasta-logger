@@ -1,5 +1,7 @@
 import { supa, requireSession } from './supa.js'
 import { initAuthUI } from './auth.js'
+import { isSupabasePauseError } from './supabaseConfig.js'
+import { showPauseNotification, clearPauseNotification } from './pauseNotification.js'
 
 await initAuthUI('#auth')
 const session = await requireSession()
@@ -65,10 +67,31 @@ async function reload() {
   if (thicknessMax) q = q.lte('pasta_kinds.thickness_mm', parseFloat(thicknessMax))
 
   const { data, error } = await q
-  if (error) { alert(error.message); return }
+  if (error) {
+    console.error('履歴の読み込みエラー:', error)
+
+    // Check if error indicates Supabase is paused
+    if (isSupabasePauseError(error)) {
+      const list = document.querySelector('#list')
+      list.innerHTML = ''
+      showPauseNotification(list)
+    } else {
+      alert(error.message)
+    }
+    return
+  }
+
+  // Clear any previous error notification on success
+  clearPauseNotification('#list')
 
   const list = document.querySelector('#list'); list.innerHTML = ''
-  for (const row of (data||[])) {
+
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="text-gray-500 text-center py-8">まだ記録がありません</p>'
+    return
+  }
+
+  for (const row of data) {
     const star = row.rating_core?.overall ?? '-'
     const url = await resolvePhotoUrl(row)
     const img = url ? `<img src="${url}" class="w-32 h-24 object-cover rounded-lg border mb-2" />` : ''

@@ -96,6 +96,9 @@
       </div>
     </section>
 
+    <!-- エラー通知エリア -->
+    <div id="errorNotification"></div>
+
     <!-- 履歴一覧 -->
     <section class="space-y-4">
       <h2 class="text-xl font-bold">パスタ記録</h2>
@@ -106,6 +109,8 @@
   <script type="module">
     import { initAuthUI } from './src/auth.js'
     import { supa } from './src/supa.js'
+    import { isSupabasePauseError } from './src/supabaseConfig.js'
+    import { showPauseNotification, clearPauseNotification } from './src/pauseNotification.js'
     
     const html = document.documentElement
     document.getElementById('themeToggle').onclick = () => {
@@ -139,8 +144,14 @@
       if (!session?.data?.session) return
 
       // レシピ一覧を取得
-      const { data: recipes } = await supa.from('recipes')
+      const { data: recipes, error: recipesError } = await supa.from('recipes')
         .select('id,name').eq('is_active', true).order('name')
+
+      if (recipesError && isSupabasePauseError(recipesError)) {
+        // Don't show notification here, let loadRecentLogs handle it
+        return
+      }
+
       const recipeSelect = document.querySelector('#recipeFilter')
       recipeSelect.innerHTML = '<option value="">すべて</option>'
       recipes?.forEach(r => {
@@ -151,8 +162,13 @@
       })
 
       // パスタ種類一覧を取得
-      const { data: pastaKinds } = await supa.from('pasta_kinds')
+      const { data: pastaKinds, error: pastaError } = await supa.from('pasta_kinds')
         .select('id,brand,thickness_mm').eq('is_active', true).order('brand').order('thickness_mm')
+
+      if (pastaError && isSupabasePauseError(pastaError)) {
+        return
+      }
+
       const pastaSelect = document.querySelector('#pastaKindFilter')
       pastaSelect.innerHTML = '<option value="">すべて</option>'
       pastaKinds?.forEach(p => {
@@ -203,8 +219,22 @@
 
       if (error) {
         console.error('履歴の読み込みエラー:', error)
+
+        // Check if error indicates Supabase is paused
+        if (isSupabasePauseError(error)) {
+          showPauseNotification('#errorNotification')
+          document.querySelector('#recentLogs').innerHTML = ''
+        } else {
+          // Other errors
+          clearPauseNotification('#errorNotification')
+          document.querySelector('#recentLogs').innerHTML =
+            '<p class="text-red-500 text-center py-8">データの読み込みに失敗しました</p>'
+        }
         return
       }
+
+      // Clear error notification on success
+      clearPauseNotification('#errorNotification')
 
       const container = document.querySelector('#recentLogs')
       if (!data || data.length === 0) {
