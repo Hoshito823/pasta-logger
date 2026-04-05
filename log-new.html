@@ -33,15 +33,32 @@
 
     <div><label class="label">パスタ名</label><input id="pastaName" name="pastaName" class="input" placeholder="ナスとアンチョビのペペロンチーノ"></div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div><label class="label">カテゴリ</label><select id="recipe" name="recipe" class="input"></select></div>
-      <div>
-        <label class="label">麺 <span class="text-red-500">*</span></label>
-        <select id="pasta" name="pasta" class="input" required></select>
-        <button type="button" id="addNewPasta" class="btn text-xs mt-1 w-full">新しい麺を登録</button>
+    <!-- 麺セクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">麺</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label">麺の種類 <span class="text-red-500">*</span></label>
+          <select id="pasta" name="pasta" class="input" required></select>
+          <button type="button" id="addNewPasta" class="btn text-xs mt-1 w-full">新しい麺を登録</button>
+        </div>
+        <div>
+          <label class="label">グラム数 <span class="text-red-500">*</span></label>
+          <div class="flex items-center gap-2">
+            <button type="button" id="pastaAmountMinus" class="btn w-8 h-8 flex items-center justify-center p-0">-</button>
+            <input id="pastaAmount" name="pastaAmount" type="number" min="50" max="150" step="10" value="80" class="input text-center" required>
+            <button type="button" id="pastaAmountPlus" class="btn w-8 h-8 flex items-center justify-center p-0">+</button>
+            <span class="text-sm text-gray-600">g</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 mt-1">
+            <button type="button" class="amount-preset-btn btn text-xs py-1" data-amount="70">70g</button>
+            <button type="button" class="amount-preset-btn btn text-xs py-1" data-amount="80">80g</button>
+            <button type="button" class="amount-preset-btn btn text-xs py-1" data-amount="90">90g</button>
+            <button type="button" class="amount-preset-btn btn text-xs py-1" data-amount="100">100g</button>
+          </div>
+        </div>
       </div>
-      <div><label class="label">チーズ（複数可）</label><select id="cheese" name="cheese" class="input" multiple size="3"></select></div>
-    </div>
+    </section>
 
     <!-- 茹で時間設定 -->
     <div>
@@ -76,111 +93,240 @@
 
     <!-- 水量・塩・茹で汁 -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div><label class="label">水量(L)</label><input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="1.0"></div>
+      <div>
+        <label class="label">水量(L)</label>
+        <input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="1.0">
+        <!-- 水量プリセットボタン -->
+        <div class="grid grid-cols-4 gap-1 mt-1">
+          <button type="button" class="water-preset-btn btn text-xs py-1" data-water="1.0">1.0L</button>
+          <button type="button" class="water-preset-btn btn text-xs py-1" data-water="1.5">1.5L</button>
+          <button type="button" class="water-preset-btn btn text-xs py-1" data-water="2.0">2.0L</button>
+          <button type="button" class="water-preset-btn btn text-xs py-1" data-water="2.5">2.5L</button>
+        </div>
+      </div>
       <div><label class="label">塩(g)</label><input id="saltAmount" name="saltAmount" type="number" step="1" class="input" placeholder="12"></div>
       <div><label class="label">茹で汁(お玉0.5)</label><input id="ladle" name="ladle" type="number" step="0.5" class="input" placeholder="1.0"></div>
     </div>
-    
+
     <div class="text-sm text-gray-500" id="saltPercentage"></div>
 
-    <!-- 調理工程記録セクション -->
-    <div class="card space-y-4">
-      <h3 class="font-semibold">調理工程記録</h3>
-
-      <!-- タイマー表示 -->
-      <div id="timerDisplay" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-        <div class="text-2xl font-bold text-blue-800" id="timerTime">準備中</div>
-        <div class="text-sm text-blue-600 mt-1" id="timerStatus">調理開始準備</div>
-      </div>
-
-      <!-- 工程記録ボタン -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <button type="button" id="btnSauceStart" class="process-btn btn-outline border-orange-300 text-orange-700 hover:bg-orange-50 p-4 md:p-3 rounded-xl transition-all" data-process="sauce_start">
-          <div class="text-base md:text-sm font-medium">① ソース開始</div>
-          <div id="timeSauceStart" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-
-        <button type="button" id="btnPastaStart" class="process-btn btn-outline border-blue-300 text-blue-700 hover:bg-blue-50 p-4 md:p-3 rounded-xl transition-all" data-process="pasta_start">
-          <div class="text-base md:text-sm font-medium">② 麺投入</div>
-          <div id="timePastaStart" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-
-        <button type="button" id="btnPastaFinish" class="process-btn btn-outline border-blue-300 text-blue-700 hover:bg-blue-50 p-4 md:p-3 rounded-xl transition-all" data-process="pasta_finish">
-          <div class="text-base md:text-sm font-medium">③ 茹で上がり</div>
-          <div id="timePastaFinish" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-
-        <button type="button" id="btnSauceFinish" class="process-btn btn-outline border-orange-300 text-orange-700 hover:bg-orange-50 p-4 md:p-3 rounded-xl transition-all" data-process="sauce_finish">
-          <div class="text-base md:text-sm font-medium">④ ソース完成</div>
-          <div id="timeSauceFinish" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-
-        <button type="button" id="btnCombineStart" class="process-btn btn-outline border-purple-300 text-purple-700 hover:bg-purple-50 p-4 md:p-3 rounded-xl transition-all" data-process="combine_start">
-          <div class="text-base md:text-sm font-medium">⑤ 合わせ開始</div>
-          <div id="timeCombineStart" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-
-        <button type="button" id="btnCompletion" class="process-btn btn-outline border-green-300 text-green-700 hover:bg-green-50 p-4 md:p-3 rounded-xl transition-all" data-process="completion">
-          <div class="text-base md:text-sm font-medium">⑥ 完成</div>
-          <div id="timeCompletion" class="text-sm md:text-xs text-gray-500 mt-1">未記録</div>
-        </button>
-      </div>
-
-      <!-- 時間分析表示（調理完了後） -->
-      <div id="timeAnalysis" class="hidden bg-green-50 p-4 rounded-xl">
-        <h4 class="font-semibold text-green-700 mb-2">時間分析</h4>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-          <div>
-            <span class="text-gray-600">ソース待機:</span>
-            <span id="analysisSauceWait" class="font-medium">-</span>
+    <!-- 5大要素セクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">5大要素（使った項目のみ）</h3>
+      <div class="space-y-3">
+        <!-- トマト -->
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedPomodoro" class="mt-1">
+          <div class="flex-1">
+            <label for="usedPomodoro" class="label cursor-pointer">トマト（Pomodoro）</label>
+            <select id="pomodoroDetail" class="input text-sm hidden" disabled>
+              <option value="">選択してください</option>
+              <option value="ソース">ソース</option>
+              <option value="ホール缶">ホール缶</option>
+              <option value="生トマト">生トマト</option>
+              <option value="その他">その他</option>
+            </select>
           </div>
-          <div>
-            <span class="text-gray-600">麺待機:</span>
-            <span id="analysisPastaWait" class="font-medium">-</span>
+        </div>
+
+        <!-- にんにく -->
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedAglio" class="mt-1">
+          <div class="flex-1">
+            <label for="usedAglio" class="label cursor-pointer">にんにく（Aglio）</label>
+            <select id="aglioDetail" class="input text-sm hidden" disabled>
+              <option value="">選択してください</option>
+              <option value="スライス">スライス</option>
+              <option value="みじん切り">みじん切り</option>
+              <option value="ホールをつぶす">ホールをつぶす</option>
+              <option value="その他">その他</option>
+            </select>
           </div>
-          <div>
-            <span class="text-gray-600">合わせ時間:</span>
-            <span id="analysisCombineDuration" class="font-medium">-</span>
+        </div>
+
+        <!-- オリーブオイル -->
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedOlio" class="mt-1">
+          <div class="flex-1">
+            <label for="usedOlio" class="label cursor-pointer">オリーブオイル（Olio d'Oliva）</label>
+            <select id="olioDetail" class="input text-sm hidden" disabled>
+              <option value="">選択してください</option>
+              <option value="加熱用のみ">加熱用のみ</option>
+              <option value="仕上げ用のみ">仕上げ用のみ</option>
+              <option value="両方">両方</option>
+            </select>
           </div>
-          <div>
-            <span class="text-gray-600">総調理時間:</span>
-            <span id="analysisTotalTime" class="font-medium text-blue-600">-</span>
+        </div>
+
+        <!-- バター -->
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedBurro" class="mt-1">
+          <div class="flex-1">
+            <label for="usedBurro" class="label cursor-pointer">バター（Burro）</label>
+            <input id="burroDetail" type="text" class="input text-sm hidden" placeholder="ブランド名など" disabled>
+          </div>
+        </div>
+
+        <!-- パルミジャーノ -->
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedParmigiano" class="mt-1">
+          <div class="flex-1">
+            <label for="usedParmigiano" class="label cursor-pointer">パルミジャーノ（Parmigiano）</label>
+            <select id="parmigianoDetail" class="input text-sm hidden" disabled>
+              <option value="">選択してください</option>
+              <option value="ブロック削り">ブロック削り</option>
+              <option value="パウダー">パウダー</option>
+            </select>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- サブ要素セクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">サブ要素（使った項目のみ）</h3>
+      <div class="space-y-3">
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedChiliOil" class="mt-1">
+          <div class="flex-1">
+            <label for="usedChiliOil" class="label cursor-pointer">唐辛子オイル</label>
+            <input id="chiliOilNote" type="text" class="input text-sm hidden" placeholder="メモ（任意）" disabled>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedAnchovy" class="mt-1">
+          <div class="flex-1">
+            <label for="usedAnchovy" class="label cursor-pointer">アンチョビ</label>
+            <input id="anchovyNote" type="text" class="input text-sm hidden" placeholder="メモ（任意）" disabled>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedCheeses" class="mt-1">
+          <div class="flex-1">
+            <label for="usedCheeses" class="label cursor-pointer">チーズ各種</label>
+            <input id="cheesesItems" type="text" class="input text-sm hidden" placeholder="種類をカンマ区切りで（例：ペコリーノ、ゴルゴンゾーラ）" disabled>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <input type="checkbox" id="usedCream" class="mt-1">
+          <div class="flex-1">
+            <label for="usedCream" class="label cursor-pointer">生クリーム</label>
+            <input id="creamNote" type="text" class="input text-sm hidden" placeholder="メモ（任意）" disabled>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 香り要素セクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">香り要素</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaItalianParsley">
+          <span class="text-sm">イタリアンパセリ</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaBasil">
+          <span class="text-sm">バジル</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaRosemary">
+          <span class="text-sm">ローズマリー</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaSage">
+          <span class="text-sm">セージ</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaLemon">
+          <span class="text-sm">レモン</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="aromaBlackPepper">
+          <span class="text-sm">黒胡椒</span>
+        </label>
+      </div>
       <div>
-        <label class="label">総合★</label>
-        <div class="flex gap-1" id="overallStars">
-          <button type="button" class="star-btn" data-rating="1">★</button>
-          <button type="button" class="star-btn" data-rating="2">★</button>
-          <button type="button" class="star-btn" data-rating="3">★</button>
-          <button type="button" class="star-btn" data-rating="4">★</button>
-          <button type="button" class="star-btn" data-rating="5">★</button>
-        </div>
-        <input id="overall" name="overall" type="hidden">
+        <label class="label">その他の香り要素</label>
+        <input id="aromaOther" type="text" class="input text-sm" placeholder="例：オレガノ、タイム">
+      </div>
+    </section>
+
+    <!-- 具材セクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">具材</h3>
+      <div>
+        <label class="label">旨味系具材</label>
+        <input id="umamiIngredients" type="text" class="input" placeholder="例：グアンチャーレ、パンチェッタ、生ハム、牡蠣（カンマ区切り）">
+        <p class="text-xs text-gray-500 mt-1">ソース構成に影響する具材を記録</p>
       </div>
       <div>
-        <label class="label">堅さ</label>
-        <div class="flex gap-2 flex-wrap" id="firmnessButtons">
-          <button type="button" class="firmness-btn" data-rating="1">やわらかい</button>
-          <button type="button" class="firmness-btn" data-rating="2">少しやわらかい</button>
-          <button type="button" class="firmness-btn" data-rating="3">ちょうどよい</button>
-          <button type="button" class="firmness-btn" data-rating="4">少しかたい</button>
-          <button type="button" class="firmness-btn" data-rating="5">かたい</button>
-        </div>
-        <input id="firmness" name="firmness" type="hidden">
+        <label class="label">その他具材</label>
+        <input id="otherIngredients" type="text" class="input" placeholder="例：ナス、ズッキーニ、エビ（カンマ区切り）">
+        <p class="text-xs text-gray-500 mt-1">野菜、魚介など</p>
       </div>
-    </div>
+    </section>
+
+    <!-- 評価スコアセクション -->
+    <section class="card space-y-4">
+      <h3 class="text-lg font-semibold">評価スコア（5段階）</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label">麺の質</label>
+          <div class="flex gap-1" id="pastaQualityStars">
+            <button type="button" class="star-btn" data-rating="1">★</button>
+            <button type="button" class="star-btn" data-rating="2">★</button>
+            <button type="button" class="star-btn" data-rating="3">★</button>
+            <button type="button" class="star-btn" data-rating="4">★</button>
+            <button type="button" class="star-btn" data-rating="5">★</button>
+          </div>
+          <input id="pastaQuality" name="pastaQuality" type="hidden">
+        </div>
+        <div>
+          <label class="label">塩加減</label>
+          <div class="flex gap-1" id="saltBalanceStars">
+            <button type="button" class="star-btn" data-rating="1">★</button>
+            <button type="button" class="star-btn" data-rating="2">★</button>
+            <button type="button" class="star-btn" data-rating="3">★</button>
+            <button type="button" class="star-btn" data-rating="4">★</button>
+            <button type="button" class="star-btn" data-rating="5">★</button>
+          </div>
+          <input id="saltBalance" name="saltBalance" type="hidden">
+        </div>
+        <div>
+          <label class="label">ソース・食材のバランス</label>
+          <div class="flex gap-1" id="sauceBalanceStars">
+            <button type="button" class="star-btn" data-rating="1">★</button>
+            <button type="button" class="star-btn" data-rating="2">★</button>
+            <button type="button" class="star-btn" data-rating="3">★</button>
+            <button type="button" class="star-btn" data-rating="4">★</button>
+            <button type="button" class="star-btn" data-rating="5">★</button>
+          </div>
+          <input id="sauceBalance" name="sauceBalance" type="hidden">
+        </div>
+        <div>
+          <label class="label">全体の完成度</label>
+          <div class="flex gap-1" id="overallStars">
+            <button type="button" class="star-btn" data-rating="1">★</button>
+            <button type="button" class="star-btn" data-rating="2">★</button>
+            <button type="button" class="star-btn" data-rating="3">★</button>
+            <button type="button" class="star-btn" data-rating="4">★</button>
+            <button type="button" class="star-btn" data-rating="5">★</button>
+          </div>
+          <input id="overall" name="overall" type="hidden">
+        </div>
+      </div>
+    </section>
 
     <div><label class="label">レシピ参考</label>
       <input id="recipeReference" name="recipeReference" type="text" class="input" placeholder="参考にしたレシピのURL、書籍名、動画リンクなど">
     </div>
 
-    <div><label class="label">メモ</label>
-      <textarea id="feedback" name="feedback" rows="3" class="input" placeholder="少し硬すぎ／ソース開始が遅れた 等"></textarea>
+    <div><label class="label">前回から変えたこと・今回の気づき</label>
+      <textarea id="feedback" name="feedback" rows="3" class="input" placeholder="例：茹で汁の量を前回より増やした／にんにくをみじん切りに変えた／塩を控えめにした"></textarea>
     </div>
 
     <div class="flex gap-3">

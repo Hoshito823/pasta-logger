@@ -1,11 +1,13 @@
 -- Pasta Logger - データベースセットアップ SQL
 -- 既存のpasta_logsテーブルに調理工程時間フィールドを追加
 
--- 1. pasta_logsテーブルに調理工程時間フィールドを追加
+-- 1. pasta_logsテーブルに調理工程時間フィールドとグラム数、水量を追加
 ALTER TABLE pasta_logs
 ADD COLUMN IF NOT EXISTS cooking_process_times JSONB,
 ADD COLUMN IF NOT EXISTS cooking_start_time TIMESTAMP WITH TIME ZONE,
-ADD COLUMN IF NOT EXISTS cooking_total_seconds INTEGER;
+ADD COLUMN IF NOT EXISTS cooking_total_seconds INTEGER,
+ADD COLUMN IF NOT EXISTS pasta_amount_g INTEGER,
+ADD COLUMN IF NOT EXISTS water_amount_l DECIMAL(3,1);
 
 -- 2. 基本テーブルが存在しない場合の作成（参考）
 
@@ -62,7 +64,10 @@ CREATE TABLE IF NOT EXISTS pasta_logs (
   -- 新しく追加された調理工程時間フィールド
   cooking_process_times JSONB,
   cooking_start_time TIMESTAMP WITH TIME ZONE,
-  cooking_total_seconds INTEGER
+  cooking_total_seconds INTEGER,
+  -- パスタのグラム数と水量
+  pasta_amount_g INTEGER,
+  water_amount_l DECIMAL(3,1)
 );
 
 -- 3. Row Level Security (RLS) ポリシーの設定

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>外食記録 - Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="apple-touch-icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/restaurant-list.html" class="btn">外食履歴</a>
+      <a href="/log-new.html" class="btn">作る記録</a>
+      <a href="/manage.html" class="btn">管理</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+    <h2 class="text-xl font-bold">外食記録（食べる）</h2>
+    <div id="auth"></div>
+
+    <form id="restaurantForm" class="card space-y-4" novalidate>
+      <!-- 写真 -->
+      <div>
+        <label class="label">写真</label>
+        <div class="space-y-2">
+          <div class="flex gap-2">
+            <button type="button" id="cameraBtn" class="btn flex-1">📷 カメラで撮影</button>
+            <button type="button" id="galleryBtn" class="btn flex-1">🖼️ ギャラリーから選択</button>
+          </div>
+          <input type="file" id="photo" name="photo" accept="image/*" class="input hidden">
+          <div id="photoPreview" class="hidden">
+            <img id="previewImage" class="w-full max-w-xs h-auto rounded-lg border">
+            <button type="button" id="removePhoto" class="btn text-sm mt-1">写真を削除</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 基本情報 -->
+      <section class="card space-y-4">
+        <h3 class="text-lg font-semibold">基本情報</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">店名 <span class="text-red-500">*</span></label>
+            <input id="restaurantName" name="restaurantName" type="text" class="input" placeholder="例：トラットリア イタリアーノ" required>
+          </div>
+          <div>
+            <label class="label">料理名 <span class="text-red-500">*</span></label>
+            <input id="dishName" name="dishName" type="text" class="input" placeholder="例：カルボナーラ" required>
+          </div>
+          <div>
+            <label class="label">訪問日 <span class="text-red-500">*</span></label>
+            <input id="visitedAt" name="visitedAt" type="date" class="input" required>
+          </div>
+          <div>
+            <label class="label">Google Maps URL</label>
+            <input id="googleMapsUrl" name="googleMapsUrl" type="url" class="input" placeholder="https://maps.app.goo.gl/...">
+          </div>
+        </div>
+      </section>
+
+      <!-- 評価 -->
+      <section class="card space-y-4">
+        <h3 class="text-lg font-semibold">評価</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">総合評価</label>
+            <div class="flex gap-1" id="ratingStars">
+              <button type="button" class="star-btn" data-rating="1">★</button>
+              <button type="button" class="star-btn" data-rating="2">★</button>
+              <button type="button" class="star-btn" data-rating="3">★</button>
+              <button type="button" class="star-btn" data-rating="4">★</button>
+              <button type="button" class="star-btn" data-rating="5">★</button>
+            </div>
+            <input id="rating" name="rating" type="hidden">
+          </div>
+          <div>
+            <label class="label">また行きたい度</label>
+            <div class="flex gap-1" id="revisitDesireStars">
+              <button type="button" class="star-btn" data-rating="1">★</button>
+              <button type="button" class="star-btn" data-rating="2">★</button>
+              <button type="button" class="star-btn" data-rating="3">★</button>
+              <button type="button" class="star-btn" data-rating="4">★</button>
+              <button type="button" class="star-btn" data-rating="5">★</button>
+            </div>
+            <input id="revisitDesire" name="revisitDesire" type="hidden">
+          </div>
+        </div>
+      </section>
+
+      <!-- 任意項目 -->
+      <div>
+        <label class="label">次回試したいメニュー</label>
+        <input id="nextMenuToTry" name="nextMenuToTry" type="text" class="input" placeholder="例：アマトリチャーナ">
+      </div>
+
+      <div>
+        <label class="label">メモ・感想</label>
+        <textarea id="memo" name="memo" rows="4" class="input" placeholder="お店の雰囲気、料理の感想、サービスなど"></textarea>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a class="btn" href="/restaurant-list.html">キャンセル</a>
+      </div>
+    </form>
+  </main>
+
+  <script type="module" src="/src/restaurantNew.js"></script>
+</body>
+</html>

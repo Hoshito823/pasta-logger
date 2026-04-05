@@ -13,7 +13,7 @@ const $ = (s) => document.querySelector(s)
 // 編集モードの状態管理
 let isEditMode = false
 let currentData = null
-let masterData = { recipes: [], pastas: [], cheeses: [] }
+let masterData = { pastas: [] }
 
 console.log('詳細画面: URLパラメータ確認', { search: location.search, id })
 
@@ -38,16 +38,14 @@ function firmnessToText(value) {
 
 // マスターデータ読み込み
 async function loadMasters() {
-  const [recipes, pastas, cheeses] = await Promise.all([
-    supa.from('recipes').select('id,name').eq('is_active', true).order('name'),
-    supa.from('pasta_kinds').select('id,brand,thickness_mm,purchase_location,image_path,image_url').eq('is_active', true).order('brand').order('thickness_mm'),
-    supa.from('cheeses').select('id,name,image_path,image_url').eq('is_active', true).order('name')
-  ])
-  
+  const { data: pastas } = await supa.from('pasta_kinds')
+    .select('id,brand,thickness_mm,purchase_location,image_path,image_url')
+    .eq('is_active', true)
+    .order('brand')
+    .order('thickness_mm')
+
   masterData = {
-    recipes: recipes.data || [],
-    pastas: pastas.data || [],
-    cheeses: cheeses.data || []
+    pastas: pastas || []
   }
 }
 
@@ -103,17 +101,6 @@ async function showEditForm() {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <!-- レシピカテゴリ -->
-          <div class="card">
-            <div class="font-semibold mb-2">カテゴリ</div>
-            <select id="recipe" class="input">
-              <option value="">選択してください</option>
-              ${masterData.recipes.map(r => 
-                `<option value="${r.id}" ${String(currentData.recipe?.id) === String(r.id) ? 'selected' : ''}>${r.name}</option>`
-              ).join('')}
-            </select>
-          </div>
-
           <!-- パスタ -->
           <div class="card">
             <div class="font-semibold mb-2">麺 <span class="text-red-500">*</span></div>
@@ -127,16 +114,6 @@ async function showEditForm() {
               </select>
             </div>
           </div>
-        </div>
-
-        <!-- チーズ -->
-        <div class="card">
-          <div class="font-semibold mb-2">チーズ</div>
-          <select id="cheese" class="input" multiple size="3">
-            ${masterData.cheeses.map(c => 
-              `<option value="${c.id}" ${selectedCheeseIds.includes(String(c.id)) ? 'selected' : ''}>${c.name}</option>`
-            ).join('')}
-          </select>
         </div>
 
         <!-- 塩分濃度 -->
@@ -376,9 +353,7 @@ async function handleEditSubmit(e) {
     const saltPct = (water && salt) ? (salt / (water * 1000) * 100) : null
 
     const updateData = {
-      recipe_id: $('#recipe').value || null,
       pasta_kind_id: $('#pasta').value,
-      cheese_kind_ids: cheeseSel,
       boil_salt_pct: saltPct,
       ladle_half_units: $('#ladle').value ? Number($('#ladle').value) : null,
       photo_path: photo.path,
@@ -421,8 +396,7 @@ async function load(){
     .select(`
       id, taken_at, photo_url, photo_path, title, feedback_text, rating_core,
       boil_salt_pct, ladle_half_units, boil_start_ts, up_ts, combine_end_ts,
-      recipe_reference, recipe:recipes(id,name), pasta:pasta_kinds(id,brand,thickness_mm),
-      cooking_process_times, cooking_start_time, cooking_total_seconds
+      recipe_reference, pasta:pasta_kinds(id,brand,thickness_mm)
     `)
     .eq('id', id)
     .single()
@@ -438,109 +412,11 @@ async function load(){
   // 現在のデータを保存
   currentData = data
 
-  // cheeses は joinの仕方次第で配列にならない場合があるので、ログ側の cheese_kind_ids を直接読む方に変更
-  // シンプルに関連名だけを表示する
-  let cheeseNames = '-'
-  // 代替: cheese_kind_idsから名称を取得
-  const { data: logRow } = await supa.from('pasta_logs').select('cheese_kind_ids').eq('id', id).single()
-  if (logRow?.cheese_kind_ids?.length) {
-    const { data: cz } = await supa.from('cheeses').select('id,name').in('id', logRow.cheese_kind_ids)
-    cheeseNames = (cz||[]).map(x=>x.name).join('、') || '-'
-  }
-
   const imgUrl = await resolvePhotoUrl(data)
 
   // パスタ名とメモを取得
   const pastaName = data.title || ''
   const displayMemo = data.feedback_text || ''
-
-  // 調理工程記録の表示HTMLを生成
-  let cookingProcessHtml = ''
-  if (data.cooking_process_times && Object.keys(data.cooking_process_times).length > 0) {
-    const processLabels = {
-      'sauce_start': 'ソース開始',
-      'pasta_start': '麺投入',
-      'pasta_finish': '茹で上がり',
-      'sauce_finish': 'ソース完成',
-      'combine_start': '合わせ開始',
-      'completion': '完成'
-    }
-
-    const processOrder = ['sauce_start', 'pasta_start', 'pasta_finish', 'sauce_finish', 'combine_start', 'completion']
-    const processItems = processOrder
-      .filter(key => data.cooking_process_times[key])
-      .map(key => {
-        const timestamp = new Date(data.cooking_process_times[key])
-        const timeStr = timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-        return `<div class="flex justify-between items-center py-1 border-b last:border-b-0">
-          <span class="text-gray-700">${processLabels[key] || key}</span>
-          <span class="font-medium">${timeStr}</span>
-        </div>`
-      })
-      .join('')
-
-    cookingProcessHtml = `
-      <div class="card">
-        <div class="font-semibold mb-2">調理工程記録</div>
-        ${processItems}
-      </div>
-    `
-  }
-
-  // 時間分析の表示HTMLを生成
-  let timeAnalysisHtml = ''
-  if (data.cooking_process_times) {
-    const times = data.cooking_process_times
-    const analyses = []
-
-    // ソース待機時間（ソース完成から茹で上がりまで）
-    if (times.sauce_finish && times.pasta_finish) {
-      const sauceFinish = new Date(times.sauce_finish)
-      const pastaFinish = new Date(times.pasta_finish)
-      const waitSec = Math.max(0, Math.floor((pastaFinish - sauceFinish) / 1000))
-      const mins = Math.floor(waitSec / 60)
-      const secs = waitSec % 60
-      analyses.push(`<div><span class="text-gray-600">ソース待機:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
-    }
-
-    // 麺待機時間（茹で上がりから合わせ開始まで）
-    if (times.pasta_finish && times.combine_start) {
-      const pastaFinish = new Date(times.pasta_finish)
-      const combineStart = new Date(times.combine_start)
-      const waitSec = Math.floor((combineStart - pastaFinish) / 1000)
-      const mins = Math.floor(waitSec / 60)
-      const secs = waitSec % 60
-      analyses.push(`<div><span class="text-gray-600">麺待機:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
-    }
-
-    // 合わせ時間（合わせ開始から完成まで）
-    if (times.combine_start && times.completion) {
-      const combineStart = new Date(times.combine_start)
-      const completion = new Date(times.completion)
-      const duration = Math.floor((completion - combineStart) / 1000)
-      const mins = Math.floor(duration / 60)
-      const secs = duration % 60
-      analyses.push(`<div><span class="text-gray-600">合わせ時間:</span> <span class="font-medium">${mins}分${secs}秒</span></div>`)
-    }
-
-    // 総調理時間
-    if (data.cooking_total_seconds) {
-      const mins = Math.floor(data.cooking_total_seconds / 60)
-      const secs = data.cooking_total_seconds % 60
-      analyses.push(`<div><span class="text-gray-600">総調理時間:</span> <span class="font-medium text-blue-600">${mins}分${secs}秒</span></div>`)
-    }
-
-    if (analyses.length > 0) {
-      timeAnalysisHtml = `
-        <div class="card bg-green-50">
-          <div class="font-semibold mb-2 text-green-700">時間分析</div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            ${analyses.join('')}
-          </div>
-        </div>
-      `
-    }
-  }
 
   $('#content').innerHTML = `
     <div class="space-y-3">
@@ -553,9 +429,7 @@ async function load(){
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div class="card">
           <div class="font-semibold mb-2">基本情報</div>
-          <div>カテゴリ：${data.recipe?.name ?? '-'}</div>
           <div>麺：${data.pasta ? `${data.pasta.brand || 'ブランド未設定'} ${data.pasta.thickness_mm ? data.pasta.thickness_mm + 'mm' : ''}` : '-'}</div>
-          <div>チーズ：${cheeseNames}</div>
         </div>
 
         <div class="card">
@@ -573,10 +447,6 @@ async function load(){
         <div>U(上げ)：${fmt(data.up_ts)}</div>
         <div>C(合わせ終了)：${fmt(data.combine_end_ts)}</div>
       </div>
-
-      ${cookingProcessHtml}
-
-      ${timeAnalysisHtml}
 
       ${data.recipe_reference ? `
       <div class="card">

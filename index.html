@@ -21,7 +21,8 @@
       
       <!-- デスクトップ用メニュー -->
       <div class="hidden md:flex items-center gap-3">
-        <a href="/log-new.html" class="btn">新規記録</a>
+        <a href="/log-new.html" class="btn">作る記録</a>
+        <a href="/restaurant-new.html" class="btn">食べる記録</a>
         <a href="/manage.html" class="btn">管理</a>
       </div>
     </nav>
@@ -29,7 +30,8 @@
     <!-- スマホ用ドロップダウンメニュー -->
     <div id="mobileMenu" class="hidden bg-white border-t md:hidden">
       <div class="mx-auto max-w-3xl px-4 py-3 space-y-2">
-        <a href="/log-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📝 新規記録</a>
+        <a href="/log-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">📝 作る記録</a>
+        <a href="/restaurant-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">🍽️ 食べる記録</a>
         <a href="/manage.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">⚙️ 管理</a>
       </div>
     </div>
@@ -43,7 +45,11 @@
       <div class="grid gap-3 sm:hidden">
         <a class="btn btn-primary py-4 text-lg" href="/log-new.html">
           <span>📝</span>
-          <span>新規記録（調理タイマー付き）</span>
+          <span>作る記録</span>
+        </a>
+        <a class="btn py-4 text-lg" href="/restaurant-new.html">
+          <span>🍽️</span>
+          <span>食べる記録（外食）</span>
         </a>
         <a class="btn py-3" href="/manage.html">
           <span>⚙️</span>
@@ -53,46 +59,48 @@
 
       <!-- デスクトップ用：横並び -->
       <div class="hidden sm:flex gap-3 flex-wrap">
-        <a class="btn btn-primary" href="/log-new.html">📝 新規記録（調理タイマー付き）</a>
+        <a class="btn btn-primary" href="/log-new.html">📝 作る記録</a>
+        <a class="btn" href="/restaurant-new.html">🍽️ 食べる記録（外食）</a>
         <a class="btn" href="/manage.html">データ管理</a>
       </div>
     </section>
 
     <section id="auth"></section>
 
-    <!-- 絞り込みフィルター -->
+    <!-- 絞り込みフィルター（アコーディオン） -->
     <section class="card space-y-4">
-      <h3 class="text-lg font-semibold">絞り込み・並び替え</h3>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="label">カテゴリ</label>
-          <select id="recipeFilter" class="input"></select>
-        </div>
-        <div>
-          <label class="label">パスタ種類</label>
-          <select id="pastaKindFilter" class="input"></select>
-        </div>
-        <div>
-          <label class="label">太さ範囲</label>
-          <div class="flex gap-2 items-center">
-            <input id="thicknessMin" type="number" step="0.1" min="1.0" max="3.0" placeholder="最小" class="input text-sm">
-            <span class="text-gray-500">〜</span>
-            <input id="thicknessMax" type="number" step="0.1" min="1.0" max="3.0" placeholder="最大" class="input text-sm">
-            <span class="text-sm text-gray-500">mm</span>
+      <button id="filterToggle" class="w-full flex items-center justify-between text-lg font-semibold hover:text-blue-600 transition-colors">
+        <span>絞り込み・並び替え</span>
+        <span id="filterToggleIcon">▼</span>
+      </button>
+      <div id="filterContent" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="label">パスタ種類</label>
+            <select id="pastaKindFilter" class="input"></select>
+          </div>
+          <div>
+            <label class="label">太さ範囲</label>
+            <div class="flex gap-2 items-center">
+              <input id="thicknessMin" type="number" step="0.1" min="1.0" max="3.0" placeholder="最小" class="input text-sm">
+              <span class="text-gray-500">〜</span>
+              <input id="thicknessMax" type="number" step="0.1" min="1.0" max="3.0" placeholder="最大" class="input text-sm">
+              <span class="text-sm text-gray-500">mm</span>
+            </div>
+          </div>
+          <div>
+            <label class="label">並び順</label>
+            <select id="sortOrder" class="input">
+              <option value="rating">評価順</option>
+              <option value="date_desc">日付順（新→古）</option>
+              <option value="date_asc">日付順（古→新）</option>
+            </select>
           </div>
         </div>
-        <div>
-          <label class="label">並び順</label>
-          <select id="sortOrder" class="input">
-            <option value="rating">評価順</option>
-            <option value="date_desc">日付順（新→古）</option>
-            <option value="date_asc">日付順（古→新）</option>
-          </select>
+        <div class="flex gap-2">
+          <button id="reload" class="btn btn-primary">絞り込み</button>
+          <button id="clearFilter" class="btn">クリア</button>
         </div>
-      </div>
-      <div class="flex gap-2">
-        <button id="reload" class="btn btn-primary">絞り込み</button>
-        <button id="clearFilter" class="btn">クリア</button>
       </div>
     </section>
 
@@ -138,28 +146,20 @@
 
     initAuthUI('#auth')
 
-    // レシピとパスタ種類を読み込む
+    // アコーディオンの開閉
+    const filterToggle = document.getElementById('filterToggle')
+    const filterContent = document.getElementById('filterContent')
+    const filterToggleIcon = document.getElementById('filterToggleIcon')
+
+    filterToggle.onclick = () => {
+      filterContent.classList.toggle('hidden')
+      filterToggleIcon.textContent = filterContent.classList.contains('hidden') ? '▼' : '▲'
+    }
+
+    // パスタ種類を読み込む
     async function loadFilters() {
       const session = await supa.auth.getSession()
       if (!session?.data?.session) return
-
-      // レシピ一覧を取得
-      const { data: recipes, error: recipesError } = await supa.from('recipes')
-        .select('id,name').eq('is_active', true).order('name')
-
-      if (recipesError && isSupabasePauseError(recipesError)) {
-        // Don't show notification here, let loadRecentLogs handle it
-        return
-      }
-
-      const recipeSelect = document.querySelector('#recipeFilter')
-      recipeSelect.innerHTML = '<option value="">すべて</option>'
-      recipes?.forEach(r => {
-        const opt = document.createElement('option')
-        opt.value = r.id
-        opt.textContent = r.name
-        recipeSelect.appendChild(opt)
-      })
 
       // パスタ種類一覧を取得
       const { data: pastaKinds, error: pastaError } = await supa.from('pasta_kinds')
@@ -184,7 +184,6 @@
       const session = await supa.auth.getSession()
       if (!session?.data?.session) return
 
-      const recipeId = document.querySelector('#recipeFilter').value
       const pastaKindId = document.querySelector('#pastaKindFilter').value
       const thicknessMin = document.querySelector('#thicknessMin').value
       const thicknessMax = document.querySelector('#thicknessMax').value
@@ -192,9 +191,8 @@
 
       let query = supa.from('pasta_logs')
         .select(`
-          id,taken_at,photo_url,photo_path,recipe_id,pasta_kind_id,rating_core,feedback_text,title,
-          pasta_kinds!inner(id,brand,thickness_mm),
-          recipes(id,name)
+          id,taken_at,photo_url,photo_path,pasta_kind_id,rating_core,feedback_text,title,
+          pasta_kinds!inner(id,brand,thickness_mm)
         `)
         .limit(50)
 
@@ -210,7 +208,6 @@
       }
 
       // フィルター適用
-      if (recipeId) query = query.eq('recipe_id', recipeId)
       if (pastaKindId) query = query.eq('pasta_kind_id', pastaKindId)
       if (thicknessMin) query = query.gte('pasta_kinds.thickness_mm', parseFloat(thicknessMin))
       if (thicknessMax) query = query.lte('pasta_kinds.thickness_mm', parseFloat(thicknessMax))
@@ -254,8 +251,7 @@
         }
 
         const img = photoUrl ? `<img src="${photoUrl}" class="w-24 h-20 object-cover rounded-lg border" />` : ''
-        const title = row.title || row.recipes?.name || '料理名未登録'
-        const recipeName = row.recipes?.name || '料理名未登録'
+        const title = row.title || '料理名未登録'
         const pastaInfo = row.pasta_kinds ? `${row.pasta_kinds.brand || 'ブランド不明'} (${row.pasta_kinds.thickness_mm}mm)` : ''
 
         const card = document.createElement('div')
@@ -267,7 +263,6 @@
               <div class="flex-1 min-w-0">
                 <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
                 <div class="text-lg font-bold text-gray-900 mb-1 truncate">${title}</div>
-                ${recipeName !== title ? `<div class="text-sm text-gray-500 mb-1">${recipeName}</div>` : ''}
                 ${pastaInfo ? `<div class="text-sm text-gray-600 mb-1">${pastaInfo}</div>` : ''}
                 <div class="text-sm text-amber-600 mb-1">★${star}</div>
                 <div class="text-gray-700 text-sm line-clamp-2">${(row.feedback_text||'').slice(0,100)}</div>
@@ -280,7 +275,6 @@
 
     // フィルタークリア機能
     function clearFilters() {
-      document.querySelector('#recipeFilter').value = ''
       document.querySelector('#pastaKindFilter').value = ''
       document.querySelector('#thicknessMin').value = ''
       document.querySelector('#thicknessMax').value = ''

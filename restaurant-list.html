@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>外食履歴 - Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="apple-touch-icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/restaurant-new.html" class="btn">新規記録</a>
+      <a href="/log-new.html" class="btn">作る記録</a>
+      <a href="/manage.html" class="btn">管理</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+    <h2 class="text-xl font-bold">外食履歴（食べる）</h2>
+    <div id="auth"></div>
+
+    <!-- 絞り込みフィルター（アコーディオン） -->
+    <section class="card space-y-4">
+      <button id="filterToggle" class="w-full flex items-center justify-between text-lg font-semibold hover:text-blue-600 transition-colors">
+        <span>絞り込み・並び替え</span>
+        <span id="filterToggleIcon">▼</span>
+      </button>
+      <div id="filterContent" class="hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="label">また行きたい度</label>
+            <select id="revisitDesireFilter" class="input">
+              <option value="">すべて</option>
+              <option value="5">★★★★★</option>
+              <option value="4">★★★★☆ 以上</option>
+              <option value="3">★★★☆☆ 以上</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">並び順</label>
+            <select id="sortOrder" class="input">
+              <option value="revisit_desire">また行きたい度順</option>
+              <option value="date_desc">訪問日順（新→古）</option>
+              <option value="date_asc">訪問日順（古→新）</option>
+              <option value="rating">評価順</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="reload" class="btn btn-primary">絞り込み</button>
+          <button id="clearFilter" class="btn">クリア</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- エラー通知エリア -->
+    <div id="errorNotification"></div>
+
+    <!-- 履歴一覧 -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">記録一覧</h3>
+        <a href="/restaurant-new.html" class="btn btn-primary">新規記録</a>
+      </div>
+      <div id="restaurantLogs" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initAuthUI } from './src/auth.js'
+    import { supa } from './src/supa.js'
+    import { isSupabasePauseError } from './src/supabaseConfig.js'
+    import { showPauseNotification, clearPauseNotification } from './src/pauseNotification.js'
+
+    initAuthUI('#auth')
+
+    // アコーディオンの開閉
+    const filterToggle = document.getElementById('filterToggle')
+    const filterContent = document.getElementById('filterContent')
+    const filterToggleIcon = document.getElementById('filterToggleIcon')
+
+    filterToggle.onclick = () => {
+      filterContent.classList.toggle('hidden')
+      filterToggleIcon.textContent = filterContent.classList.contains('hidden') ? '▼' : '▲'
+    }
+
+    // 履歴を読み込む（絞り込み機能付き）
+    async function loadRestaurantLogs() {
+      const session = await supa.auth.getSession()
+      if (!session?.data?.session) return
+
+      const revisitDesireFilter = document.querySelector('#revisitDesireFilter').value
+      const sortOrder = document.querySelector('#sortOrder').value
+
+      let query = supa.from('restaurant_logs')
+        .select('*')
+        .limit(50)
+
+      // ソート順の適用
+      if (sortOrder === 'revisit_desire') {
+        query = query.order('revisit_desire', { ascending: false, nullsFirst: false })
+                     .order('visited_at', { ascending: false })
+      } else if (sortOrder === 'date_desc') {
+        query = query.order('visited_at', { ascending: false })
+      } else if (sortOrder === 'date_asc') {
+        query = query.order('visited_at', { ascending: true })
+      } else if (sortOrder === 'rating') {
+        query = query.order('rating', { ascending: false, nullsFirst: false })
+                     .order('visited_at', { ascending: false })
+      }
+
+      // フィルター適用
+      if (revisitDesireFilter) {
+        query = query.gte('revisit_desire', parseInt(revisitDesireFilter))
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('履歴の読み込みエラー:', error)
+
+        if (isSupabasePauseError(error)) {
+          showPauseNotification('#errorNotification')
+          document.querySelector('#restaurantLogs').innerHTML = ''
+        } else {
+          clearPauseNotification('#errorNotification')
+          document.querySelector('#restaurantLogs').innerHTML =
+            '<p class="text-red-500 text-center py-8">データの読み込みに失敗しました</p>'
+        }
+        return
+      }
+
+      clearPauseNotification('#errorNotification')
+
+      const container = document.querySelector('#restaurantLogs')
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-8">まだ記録がありません</p>'
+        return
+      }
+
+      container.innerHTML = ''
+      for (const row of data) {
+        const rating = row.rating ? '★'.repeat(row.rating) + '☆'.repeat(5 - row.rating) : '未評価'
+        const revisitDesire = row.revisit_desire ? '★'.repeat(row.revisit_desire) + '☆'.repeat(5 - row.revisit_desire) : '未評価'
+        let photoUrl = row.photo_url
+        if (!photoUrl && row.photo_path) {
+          const { data: urlData, error: urlError } = await supa.storage
+            .from('pasta-photos')
+            .createSignedUrl(row.photo_path, 3600)
+          if (!urlError) photoUrl = urlData.signedUrl
+        }
+
+        const img = photoUrl ? `<img src="${photoUrl}" class="w-24 h-20 object-cover rounded-lg border" />` : ''
+        const visitedDate = new Date(row.visited_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+
+        const card = document.createElement('div')
+        card.className = 'card p-0'
+        card.innerHTML = `
+          <a class="block p-4 hover:bg-gray-50 rounded-2xl" href="/restaurant-detail.html?id=${row.id}">
+            <div class="flex gap-3">
+              ${img}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-gray-500">${visitedDate}</div>
+                <div class="text-lg font-bold text-gray-900 mb-1">${row.restaurant_name}</div>
+                <div class="text-md text-gray-700 mb-1">${row.dish_name}</div>
+                <div class="flex gap-4 text-sm">
+                  <div>評価: <span class="text-amber-600">${rating}</span></div>
+                  <div>また行きたい度: <span class="text-blue-600">${revisitDesire}</span></div>
+                </div>
+                ${row.memo ? `<div class="text-gray-600 text-sm line-clamp-2 mt-1">${row.memo.slice(0, 100)}</div>` : ''}
+              </div>
+            </div>
+          </a>`
+        container.appendChild(card)
+      }
+    }
+
+    // フィルタークリア機能
+    function clearFilters() {
+      document.querySelector('#revisitDesireFilter').value = ''
+      document.querySelector('#sortOrder').value = 'revisit_desire'
+      loadRestaurantLogs()
+    }
+
+    // ボタンイベント設定
+    document.querySelector('#reload').onclick = loadRestaurantLogs
+    document.querySelector('#clearFilter').onclick = clearFilters
+
+    // 認証後に履歴を読み込む
+    supa.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        loadRestaurantLogs()
+      }
+    })
+
+    // 初回読み込み
+    loadRestaurantLogs()
+  </script>
+</body>
+</html>

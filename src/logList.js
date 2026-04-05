@@ -7,17 +7,6 @@ await initAuthUI('#auth')
 const session = await requireSession()
 if (!session) throw new Error('ログインしてください')
 
-async function loadRecipes() {
-  const { data } = await supa.from('recipes')
-    .select('id,name').eq('is_active', true).order('name')
-  const sel = document.querySelector('#recipeFilter'); sel.innerHTML = ''
-  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='すべて'
-  sel.appendChild(opt0)
-  data?.forEach(r => {
-    const o = document.createElement('option'); o.value=r.id; o.textContent=r.name; sel.appendChild(o)
-  })
-}
-
 async function loadPastaKinds() {
   const { data } = await supa.from('pasta_kinds')
     .select('id,brand,thickness_mm').eq('is_active', true).order('brand').order('thickness_mm')
@@ -32,7 +21,6 @@ async function loadPastaKinds() {
   })
 }
 
-await loadRecipes()
 await loadPastaKinds()
 
 async function resolvePhotoUrl(row){
@@ -45,23 +33,20 @@ async function resolvePhotoUrl(row){
 }
 
 async function reload() {
-  const recipeId = document.querySelector('#recipeFilter').value
   const pastaKindId = document.querySelector('#pastaKindFilter').value
   const thicknessMin = document.querySelector('#thicknessMin').value
   const thicknessMax = document.querySelector('#thicknessMax').value
 
   let q = supa.from('pasta_logs')
     .select(`
-      id,taken_at,photo_url,photo_path,recipe_id,pasta_kind_id,rating_core,feedback_text,title,
-      pasta_kinds!inner(id,brand,thickness_mm),
-      recipes(id,name)
+      id,taken_at,photo_url,photo_path,pasta_kind_id,rating_core,feedback_text,title,
+      pasta_kinds!inner(id,brand,thickness_mm)
     `)
     .order('rating_core->>overall', { ascending: false })
     .order('taken_at', { ascending: false })
     .limit(50)
 
   // フィルター適用
-  if (recipeId) q = q.eq('recipe_id', recipeId)
   if (pastaKindId) q = q.eq('pasta_kind_id', pastaKindId)
   if (thicknessMin) q = q.gte('pasta_kinds.thickness_mm', parseFloat(thicknessMin))
   if (thicknessMax) q = q.lte('pasta_kinds.thickness_mm', parseFloat(thicknessMax))
@@ -95,8 +80,7 @@ async function reload() {
     const star = row.rating_core?.overall ?? '-'
     const url = await resolvePhotoUrl(row)
     const img = url ? `<img src="${url}" class="w-32 h-24 object-cover rounded-lg border mb-2" />` : ''
-    const title = row.title || row.recipes?.name || '料理名未登録'
-    const recipeName = row.recipes?.name || '料理名未登録'
+    const title = row.title || '料理名未登録'
     const pastaInfo = row.pasta_kinds ? `${row.pasta_kinds.brand || 'ブランド不明'} (${row.pasta_kinds.thickness_mm}mm)` : ''
 
     const card = document.createElement('div'); card.className='card p-0'
@@ -107,7 +91,6 @@ async function reload() {
           <div class="flex-1">
             <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
             <div class="text-lg font-bold text-gray-900 mb-1">${title}</div>
-            ${recipeName !== title ? `<div class="text-sm text-gray-500 mb-1">カテゴリ: ${recipeName}</div>` : ''}
             ${pastaInfo ? `<div class="text-sm text-gray-600 mb-1">${pastaInfo}</div>` : ''}
             <div class="text-sm text-amber-600 mb-1">★${star}</div>
             <div class="text-gray-700">${(row.feedback_text||'').slice(0,160)}</div>
@@ -120,7 +103,6 @@ async function reload() {
 
 // フィルタークリア機能
 function clearFilters() {
-  document.querySelector('#recipeFilter').value = ''
   document.querySelector('#pastaKindFilter').value = ''
   document.querySelector('#thicknessMin').value = ''
   document.querySelector('#thicknessMax').value = ''

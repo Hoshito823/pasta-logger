@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>外食記録詳細 - Pasta Logger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="apple-touch-icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="icon" href="/icons/pastalogger_homeicon.png">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+  <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+      <a href="/" class="font-semibold">Pasta Logger</a>
+      <a href="/restaurant-list.html" class="btn">外食履歴</a>
+      <a href="/log-new.html" class="btn">作る記録</a>
+      <a href="/manage.html" class="btn">管理</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-6 space-y-6">
+    <div class="flex items-center gap-4">
+      <a href="/restaurant-list.html" class="btn">← 一覧に戻る</a>
+      <h2 class="text-xl font-bold">外食記録詳細</h2>
+    </div>
+    <div id="auth"></div>
+
+    <div id="detailContent" class="space-y-6">
+      <!-- ここにコンテンツが動的に読み込まれる -->
+    </div>
+  </main>
+
+  <script type="module">
+    import { initAuthUI } from './src/auth.js'
+    import { supa, requireSession } from './src/supa.js'
+
+    initAuthUI('#auth')
+    await requireSession()
+
+    // URLからIDを取得
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('id')
+
+    if (!id) {
+      document.querySelector('#detailContent').innerHTML = '<p class="text-red-500 text-center py-8">記録IDが指定されていません</p>'
+    } else {
+      loadDetail(id)
+    }
+
+    async function loadDetail(id) {
+      const { data, error } = await supa.from('restaurant_logs')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('詳細読み込みエラー:', error)
+        document.querySelector('#detailContent').innerHTML = '<p class="text-red-500 text-center py-8">データの読み込みに失敗しました</p>'
+        return
+      }
+
+      if (!data) {
+        document.querySelector('#detailContent').innerHTML = '<p class="text-gray-500 text-center py-8">記録が見つかりません</p>'
+        return
+      }
+
+      // 写真URLの取得
+      let photoUrl = data.photo_url
+      if (!photoUrl && data.photo_path) {
+        const { data: urlData, error: urlError } = await supa.storage
+          .from('pasta-photos')
+          .createSignedUrl(data.photo_path, 3600)
+        if (!urlError) photoUrl = urlData.signedUrl
+      }
+
+      // 評価の星表示
+      const rating = data.rating ? '★'.repeat(data.rating) + '☆'.repeat(5 - data.rating) : '未評価'
+      const revisitDesire = data.revisit_desire ? '★'.repeat(data.revisit_desire) + '☆'.repeat(5 - data.revisit_desire) : '未評価'
+      const visitedDate = new Date(data.visited_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+
+      const content = document.querySelector('#detailContent')
+      content.innerHTML = `
+        <!-- 写真 -->
+        ${photoUrl ? `
+          <div class="card">
+            <img src="${photoUrl}" class="w-full h-auto rounded-lg" />
+          </div>
+        ` : ''}
+
+        <!-- 基本情報 -->
+        <section class="card space-y-4">
+          <h3 class="text-lg font-semibold">基本情報</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-sm text-gray-500">店名</div>
+              <div class="text-lg font-bold">${data.restaurant_name}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">料理名</div>
+              <div class="text-lg font-bold">${data.dish_name}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">訪問日</div>
+              <div class="text-md">${visitedDate}</div>
+            </div>
+            ${data.google_maps_url ? `
+              <div>
+                <div class="text-sm text-gray-500">地図</div>
+                <a href="${data.google_maps_url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                  📍 Google Mapsで開く
+                </a>
+              </div>
+            ` : ''}
+          </div>
+        </section>
+
+        <!-- 評価 -->
+        <section class="card space-y-4">
+          <h3 class="text-lg font-semibold">評価</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div class="text-sm text-gray-500">総合評価</div>
+              <div class="text-xl text-amber-600">${rating}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">また行きたい度</div>
+              <div class="text-xl text-blue-600">${revisitDesire}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 次回試したいメニュー -->
+        ${data.next_menu_to_try ? `
+          <section class="card space-y-2">
+            <h3 class="text-lg font-semibold">次回試したいメニュー</h3>
+            <div class="text-gray-700">${data.next_menu_to_try}</div>
+          </section>
+        ` : ''}
+
+        <!-- メモ・感想 -->
+        ${data.memo ? `
+          <section class="card space-y-2">
+            <h3 class="text-lg font-semibold">メモ・感想</h3>
+            <div class="text-gray-700 whitespace-pre-wrap">${data.memo}</div>
+          </section>
+        ` : ''}
+
+        <!-- 記録日時 -->
+        <div class="text-sm text-gray-500 text-center">
+          記録作成: ${new Date(data.created_at).toLocaleString('ja-JP')}
+          ${data.updated_at !== data.created_at ? ` / 最終更新: ${new Date(data.updated_at).toLocaleString('ja-JP')}` : ''}
+        </div>
+      `
+    }
+  </script>
+</body>
+</html>
