@@ -257,7 +257,7 @@
         mobileCard.href = `/log-detail.html?id=${row.id}`
         mobileCard.className = 'block card p-0 overflow-hidden'
         mobileCard.innerHTML = `
-          ${photoUrl ? `<img src="${photoUrl}" class="w-full aspect-[4/3] object-cover" />` : '<div class="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center text-gray-400">画像なし</div>'}
+          ${photoUrl ? `<img src="${photoUrl}" class="w-full aspect-[4/3] object-cover rounded-t-xl" />` : '<div class="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center text-gray-400 rounded-t-xl">画像なし</div>'}
           <div class="p-3">
             <div class="font-semibold mb-1">${title}</div>
             <div class="text-xs text-amber-600">★${star}</div>
