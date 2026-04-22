@@ -228,7 +228,17 @@
         return
       }
 
+      // スマホ用グリッド、デスクトップ用リスト
       container.innerHTML = ''
+
+      // スマホ表示用のグリッドコンテナを作成
+      const mobileGrid = document.createElement('div')
+      mobileGrid.className = 'grid grid-cols-2 gap-2 md:hidden'
+
+      // デスクトップ表示用のリストコンテナを作成
+      const desktopList = document.createElement('div')
+      desktopList.className = 'hidden md:block space-y-3'
+
       for (const row of data) {
         const star = row.rating_core?.overall ?? '-'
         let photoUrl = row.photo_url
@@ -239,16 +249,29 @@
           if (!urlError) photoUrl = urlData.signedUrl
         }
 
-        const img = photoUrl ? `<img src="${photoUrl}" class="w-24 h-20 object-cover rounded-lg border" />` : ''
         const title = row.title || '料理名未登録'
         const pastaInfo = row.pasta_kinds ? `${row.pasta_kinds.brand || 'ブランド不明'} (${row.pasta_kinds.thickness_mm}mm)` : ''
 
-        const card = document.createElement('div')
-        card.className = 'card p-0'
-        card.innerHTML = `
+        // スマホ用カード（画像メイン）
+        const mobileCard = document.createElement('a')
+        mobileCard.href = `/log-detail.html?id=${row.id}`
+        mobileCard.className = 'block card p-0 overflow-hidden'
+        mobileCard.innerHTML = `
+          ${photoUrl ? `<img src="${photoUrl}" class="w-full aspect-square object-cover" />` : '<div class="w-full aspect-square bg-gray-200 flex items-center justify-center text-gray-400">画像なし</div>'}
+          <div class="p-2">
+            <div class="font-semibold text-sm truncate">${title}</div>
+            <div class="text-xs text-amber-600">★${star}</div>
+          </div>
+        `
+        mobileGrid.appendChild(mobileCard)
+
+        // デスクトップ用カード（横長リスト）
+        const desktopCard = document.createElement('div')
+        desktopCard.className = 'card p-0'
+        desktopCard.innerHTML = `
           <a class="block p-4 hover:bg-gray-50 rounded-2xl" href="/log-detail.html?id=${row.id}">
             <div class="flex gap-3">
-              ${img}
+              ${photoUrl ? `<img src="${photoUrl}" class="w-24 h-20 object-cover rounded-lg border" />` : ''}
               <div class="flex-1 min-w-0">
                 <div class="text-sm text-gray-500">${new Date(row.taken_at).toLocaleString()}</div>
                 <div class="text-lg font-bold text-gray-900 mb-1 truncate">${title}</div>
@@ -258,8 +281,11 @@
               </div>
             </div>
           </a>`
-        container.appendChild(card)
+        desktopList.appendChild(desktopCard)
       }
+
+      container.appendChild(mobileGrid)
+      container.appendChild(desktopList)
     }
 
     // フィルタークリア機能
