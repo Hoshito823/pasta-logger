@@ -20,8 +20,8 @@
       <label class="label">写真</label>
       <div class="space-y-2">
         <div class="flex gap-2">
-          <button type="button" id="cameraBtn" class="btn flex-1">📷 カメラで撮影</button>
-          <button type="button" id="galleryBtn" class="btn flex-1">🖼️ ギャラリーから選択</button>
+          <button type="button" id="cameraBtn" class="btn flex-1">カメラで撮影</button>
+          <button type="button" id="galleryBtn" class="btn flex-1">ギャラリーから選択</button>
         </div>
         <input type="file" id="photo" name="photo" accept="image/*" class="input hidden">
         <div id="photoPreview" class="hidden">
@@ -46,7 +46,7 @@
           <label class="label">グラム数 <span class="text-red-500">*</span></label>
           <div class="flex items-center gap-2">
             <button type="button" id="pastaAmountMinus" class="btn w-8 h-8 flex items-center justify-center p-0">-</button>
-            <input id="pastaAmount" name="pastaAmount" type="number" min="50" max="150" step="10" value="80" class="input text-center" required>
+            <input id="pastaAmount" name="pastaAmount" type="number" min="50" max="200" step="10" value="80" class="input text-center" required>
             <button type="button" id="pastaAmountPlus" class="btn w-8 h-8 flex items-center justify-center p-0">+</button>
             <span class="text-sm text-gray-600">g</span>
           </div>
@@ -85,6 +85,7 @@
           <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="7" data-seconds="0">7:00</button>
           <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="8" data-seconds="0">8:00</button>
           <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="9" data-seconds="0">9:00</button>
+          <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="10" data-seconds="0">10:00</button>
         </div>
         <!-- 隠しフィールド（従来の秒単位での値を保持） -->
         <input id="boilTime" name="boilTime" type="hidden" value="480">
@@ -95,7 +96,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
         <label class="label">水量(L)</label>
-        <input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="1.0">
+        <input id="waterAmount" name="waterAmount" type="number" step="0.1" class="input" placeholder="2.0" value="2.0">
         <!-- 水量プリセットボタン -->
         <div class="grid grid-cols-4 gap-1 mt-1">
           <button type="button" class="water-preset-btn btn text-xs py-1" data-water="1.0">1.0L</button>
@@ -104,7 +105,7 @@
           <button type="button" class="water-preset-btn btn text-xs py-1" data-water="2.5">2.5L</button>
         </div>
       </div>
-      <div><label class="label">塩(g)</label><input id="saltAmount" name="saltAmount" type="number" step="1" class="input" placeholder="12"></div>
+      <div><label class="label">塩(g)</label><input id="saltAmount" name="saltAmount" type="number" step="1" class="input" placeholder="25" value="25"></div>
       <div><label class="label">茹で汁(お玉0.5)</label><input id="ladle" name="ladle" type="number" step="0.5" class="input" placeholder="1.0"></div>
     </div>
 

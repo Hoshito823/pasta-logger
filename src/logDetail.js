@@ -85,8 +85,8 @@ async function showEditForm() {
           <label class="label">写真</label>
           <div class="space-y-2">
             <div class="flex gap-2">
-              <button type="button" id="cameraBtn" class="btn flex-1">📷 カメラで撮影</button>
-              <button type="button" id="galleryBtn" class="btn flex-1">🖼️ ギャラリーから選択</button>
+              <button type="button" id="cameraBtn" class="btn flex-1">カメラで撮影</button>
+              <button type="button" id="galleryBtn" class="btn flex-1">ギャラリーから選択</button>
             </div>
             <input type="file" id="photo" accept="image/*" class="input hidden">
             <div id="photoPreview" class="hidden">
@@ -120,7 +120,7 @@ async function showEditForm() {
               <label class="label">グラム数 <span class="text-red-500">*</span></label>
               <div class="flex items-center gap-2">
                 <button type="button" id="pastaAmountMinus" class="btn w-8 h-8 flex items-center justify-center p-0">-</button>
-                <input id="pastaAmount" type="number" min="50" max="150" step="10" value="${currentData.pasta_amount_g || 80}" class="input text-center" required>
+                <input id="pastaAmount" type="number" min="50" max="200" step="10" value="${currentData.pasta_amount_g || 80}" class="input text-center" required>
                 <button type="button" id="pastaAmountPlus" class="btn w-8 h-8 flex items-center justify-center p-0">+</button>
                 <span class="text-sm text-gray-600">g</span>
               </div>
@@ -157,6 +157,7 @@ async function showEditForm() {
               <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="7" data-seconds="0">7:00</button>
               <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="8" data-seconds="0">8:00</button>
               <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="9" data-seconds="0">9:00</button>
+              <button type="button" class="boil-preset-btn btn py-1 px-1" data-minutes="10" data-seconds="0">10:00</button>
             </div>
             <input id="boilTime" type="hidden" value="480">
           </div>
@@ -478,7 +479,7 @@ function setupEditFormEvents() {
 
   $('#pastaAmountPlus').onclick = () => {
     const current = parseInt($('#pastaAmount').value) || 80
-    $('#pastaAmount').value = Math.min(150, current + 10)
+    $('#pastaAmount').value = Math.min(200, current + 10)
   }
 
   // パスタグラム数プリセットボタン
@@ -664,8 +665,8 @@ async function handleEditSubmit(e) {
 
   // グラム数の必須チェック
   const pastaAmount = parseInt($('#pastaAmount').value)
-  if (!pastaAmount || pastaAmount < 50 || pastaAmount > 150) {
-    alert('グラム数を入力してください (50-150g)')
+  if (!pastaAmount || pastaAmount < 50 || pastaAmount > 200) {
+    alert('グラム数を入力してください (50-200g)')
     return
   }
 
@@ -811,34 +812,94 @@ async function load(){
   const pastaName = data.title || ''
   const displayMemo = data.feedback_text || ''
 
+  // 5大要素の表示用データ
+  const coreIngredients = data.core_ingredients || {}
+  const coreIngredientsDisplay = [
+    { key: 'pomodoro', label: 'トマト', data: coreIngredients.pomodoro },
+    { key: 'aglio', label: 'にんにく', data: coreIngredients.aglio },
+    { key: 'olio', label: 'オリーブオイル', data: coreIngredients.olio },
+    { key: 'burro', label: 'バター', data: coreIngredients.burro },
+    { key: 'parmigiano', label: 'パルミジャーノ', data: coreIngredients.parmigiano }
+  ].filter(item => item.data?.used).map(item => `${item.label}${item.data.detail ? `（${item.data.detail}）` : ''}`).join('、')
+
+  // サブ要素の表示用データ
+  const subIngredients = data.sub_ingredients || {}
+  const subIngredientsDisplay = [
+    { key: 'chili_oil', label: '唐辛子オイル', data: subIngredients.chili_oil },
+    { key: 'anchovy', label: 'アンチョビ', data: subIngredients.anchovy },
+    { key: 'cheeses', label: 'チーズ', data: subIngredients.cheeses, isArray: true },
+    { key: 'cream', label: '生クリーム', data: subIngredients.cream }
+  ].filter(item => item.data?.used).map(item => {
+    if (item.isArray && item.data.items?.length) {
+      return `${item.label}（${item.data.items.join('、')}）`
+    }
+    return `${item.label}${item.data.note ? `（${item.data.note}）` : ''}`
+  }).join('、')
+
+  // 香り要素の表示用データ
+  const aromaIngredients = data.aroma_ingredients || {}
+  const aromaIngredientsDisplay = [
+    aromaIngredients.italian_parsley && 'イタリアンパセリ',
+    aromaIngredients.basil && 'バジル',
+    aromaIngredients.rosemary && 'ローズマリー',
+    aromaIngredients.sage && 'セージ',
+    aromaIngredients.lemon && 'レモン',
+    aromaIngredients.black_pepper && '黒胡椒',
+    aromaIngredients.other
+  ].filter(Boolean).join('、')
+
   $('#content').innerHTML = `
     <div class="space-y-3">
-      ${imgUrl ? `<img src="${imgUrl}" class="w-full max-h-80 object-cover rounded-xl border" />` : ''}
+      ${imgUrl ? `<img src="${imgUrl}" class="w-full max-h-96 object-contain rounded-xl border" />` : ''}
       <div class="text-sm text-gray-500">${fmt(data.taken_at)}</div>
 
-      ${pastaName ? `<div class="text-lg font-bold">${pastaName}</div>` : ''}
-
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div class="card">
-          <div class="font-semibold mb-2">基本情報</div>
-          <div>麺：${data.pasta ? `${data.pasta.brand || 'ブランド未設定'} ${data.pasta.thickness_mm ? data.pasta.thickness_mm + 'mm' : ''}` : '-'}</div>
-        </div>
-
-        <div class="card">
-          <div class="font-semibold mb-2">評価</div>
-          <div>総合★：${data.rating_core?.overall ?? '-'}</div>
-          <div>堅さ：${data.rating_core?.firmness ? firmnessToText(data.rating_core.firmness) : '-'}</div>
-        </div>
-      </div>
+      ${pastaName ? `<div class="text-2xl font-bold">${pastaName}</div>` : ''}
 
       <div class="card">
-        <div class="font-semibold mb-2">工程・数値</div>
-        <div>茹で塩(%)：${data.boil_salt_pct ? data.boil_salt_pct.toFixed(1) + '%' : '-'}</div>
-        <div>お玉(0.5単位)：${data.ladle_half_units ?? '-'}</div>
-        <div>B(茹で開始)：${fmt(data.boil_start_ts)}</div>
-        <div>U(上げ)：${fmt(data.up_ts)}</div>
-        <div>C(合わせ終了)：${fmt(data.combine_end_ts)}</div>
+        <div class="font-semibold mb-2">麺の情報</div>
+        <div>種類：${data.pasta ? `${data.pasta.brand || 'ブランド未設定'} ${data.pasta.thickness_mm ? data.pasta.thickness_mm + 'mm' : ''}` : '-'}</div>
+        <div>グラム数：${data.pasta_amount_g ? data.pasta_amount_g + 'g' : '-'}</div>
+        <div>水量：${data.water_amount_l ? data.water_amount_l + 'L' : '-'}</div>
+        <div>茹で塩：${data.boil_salt_pct ? data.boil_salt_pct.toFixed(1) + '%' : '-'}</div>
+        <div>お玉：${data.ladle_half_units ? data.ladle_half_units + '杯（0.5単位）' : '-'}</div>
+      </div>
+
+      ${coreIngredientsDisplay ? `
+      <div class="card">
+        <div class="font-semibold mb-2">5大要素</div>
+        <div>${coreIngredientsDisplay}</div>
+      </div>` : ''}
+
+      ${subIngredientsDisplay ? `
+      <div class="card">
+        <div class="font-semibold mb-2">サブ要素</div>
+        <div>${subIngredientsDisplay}</div>
+      </div>` : ''}
+
+      ${aromaIngredientsDisplay ? `
+      <div class="card">
+        <div class="font-semibold mb-2">香り要素</div>
+        <div>${aromaIngredientsDisplay}</div>
+      </div>` : ''}
+
+      ${data.umami_ingredients?.length ? `
+      <div class="card">
+        <div class="font-semibold mb-2">旨味系具材</div>
+        <div>${data.umami_ingredients.join('、')}</div>
+      </div>` : ''}
+
+      ${data.other_ingredients?.length ? `
+      <div class="card">
+        <div class="font-semibold mb-2">その他具材</div>
+        <div>${data.other_ingredients.join('、')}</div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="font-semibold mb-2">評価スコア</div>
+        <div>全体の完成度：${data.rating_core?.overall ? '★'.repeat(data.rating_core.overall) : '-'}</div>
+        <div>麺の質：${data.rating_core?.pasta_quality ? '★'.repeat(data.rating_core.pasta_quality) : '-'}</div>
+        <div>塩加減：${data.rating_core?.salt_balance ? '★'.repeat(data.rating_core.salt_balance) : '-'}</div>
+        <div>ソース・食材のバランス：${data.rating_core?.sauce_balance ? '★'.repeat(data.rating_core.sauce_balance) : '-'}</div>
       </div>
 
       ${data.recipe_reference ? `
@@ -850,11 +911,12 @@ async function load(){
         }</div>
       </div>` : ''}
 
+      ${displayMemo ? `
       <div class="card">
-        <div class="font-semibold mb-2">メモ</div>
-        <div class="whitespace-pre-wrap">${(displayMemo || '-')
+        <div class="font-semibold mb-2">前回から変えたこと・今回の気づき</div>
+        <div class="whitespace-pre-wrap">${displayMemo
           .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</div>
-      </div>
+      </div>` : ''}
     </div>
   `
 

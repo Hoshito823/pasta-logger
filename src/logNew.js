@@ -263,7 +263,7 @@ $('#pastaAmountMinus').onclick = () => {
 
 $('#pastaAmountPlus').onclick = () => {
   const current = parseInt($('#pastaAmount').value) || 80
-  $('#pastaAmount').value = Math.min(150, current + 10)
+  $('#pastaAmount').value = Math.min(200, current + 10)
 }
 
 // パスタグラム数プリセットボタン
@@ -423,8 +423,8 @@ $('#logForm').onsubmit = async (e) => {
 
   // グラム数の必須チェック
   const pastaAmount = parseInt($('#pastaAmount').value)
-  if (!pastaAmount || pastaAmount < 50 || pastaAmount > 150) {
-    alert('グラム数を入力してください (50-150g)')
+  if (!pastaAmount || pastaAmount < 50 || pastaAmount > 200) {
+    alert('グラム数を入力してください (50-200g)')
     return
   }
 
