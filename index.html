@@ -233,7 +233,7 @@
 
       // スマホ表示用のグリッドコンテナを作成
       const mobileGrid = document.createElement('div')
-      mobileGrid.className = 'grid grid-cols-2 gap-2 md:hidden'
+      mobileGrid.className = 'grid grid-cols-1 gap-3 md:hidden'
 
       // デスクトップ表示用のリストコンテナを作成
       const desktopList = document.createElement('div')
@@ -257,9 +257,9 @@
         mobileCard.href = `/log-detail.html?id=${row.id}`
         mobileCard.className = 'block card p-0 overflow-hidden'
         mobileCard.innerHTML = `
-          ${photoUrl ? `<img src="${photoUrl}" class="w-full aspect-square object-cover" />` : '<div class="w-full aspect-square bg-gray-200 flex items-center justify-center text-gray-400">画像なし</div>'}
-          <div class="p-2">
-            <div class="font-semibold text-sm truncate">${title}</div>
+          ${photoUrl ? `<img src="${photoUrl}" class="w-full aspect-[4/3] object-cover" />` : '<div class="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center text-gray-400">画像なし</div>'}
+          <div class="p-3">
+            <div class="font-semibold mb-1">${title}</div>
             <div class="text-xs text-amber-600">★${star}</div>
           </div>
         `
