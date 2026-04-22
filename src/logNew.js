@@ -20,6 +20,23 @@ await initAuthUI('#auth')
 const session = await requireSession()
 if (!session) throw new Error('ログインしてください')
 
+// モバイルメニューの切り替え
+const menuToggle = document.getElementById('menuToggle')
+const mobileMenu = document.getElementById('mobileMenu')
+
+if (menuToggle && mobileMenu) {
+  menuToggle.onclick = () => {
+    mobileMenu.classList.toggle('hidden')
+  }
+
+  // メニュー外をクリックした時に閉じる
+  document.addEventListener('click', (e) => {
+    if (!menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
+      mobileMenu.classList.add('hidden')
+    }
+  })
+}
+
 async function loadMasters() {
   console.log('loadMasters開始')
   try {

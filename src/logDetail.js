@@ -6,6 +6,23 @@ await initAuthUI('#auth')
 const session = await requireSession()
 if (!session) throw new Error('ログインしてください')
 
+// モバイルメニューの切り替え
+const menuToggle = document.getElementById('menuToggle')
+const mobileMenu = document.getElementById('mobileMenu')
+
+if (menuToggle && mobileMenu) {
+  menuToggle.onclick = () => {
+    mobileMenu.classList.toggle('hidden')
+  }
+
+  // メニュー外をクリックした時に閉じる
+  document.addEventListener('click', (e) => {
+    if (!menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
+      mobileMenu.classList.add('hidden')
+    }
+  })
+}
+
 const params = new URLSearchParams(location.search)
 const id = params.get('id')
 const $ = (s) => document.querySelector(s)
@@ -850,7 +867,7 @@ async function load(){
 
   $('#content').innerHTML = `
     <div class="space-y-3">
-      ${imgUrl ? `<img src="${imgUrl}" class="w-full max-h-96 object-contain rounded-xl border" />` : ''}
+      ${imgUrl ? `<div class="w-full rounded-xl border overflow-hidden"><img src="${imgUrl}" class="w-full h-auto" /></div>` : ''}
       <div class="text-sm text-gray-500">${fmt(data.taken_at)}</div>
 
       ${pastaName ? `<div class="text-2xl font-bold">${pastaName}</div>` : ''}

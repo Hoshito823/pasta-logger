@@ -15,7 +15,6 @@
       
       <!-- スマホ用メニューボタン -->
       <div class="flex items-center gap-2">
-        <button id="themeToggle" class="btn p-2">テーマ</button>
         <button id="menuToggle" class="btn p-2 md:hidden">メニュー</button>
       </div>
       
@@ -116,13 +115,6 @@
     import { supa } from './src/supa.js'
     import { isSupabasePauseError } from './src/supabaseConfig.js'
     import { showPauseNotification, clearPauseNotification } from './src/pauseNotification.js'
-    
-    const html = document.documentElement
-    document.getElementById('themeToggle').onclick = () => {
-      html.classList.toggle('dark')
-      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light')
-    }
-    if (localStorage.getItem('theme') === 'dark') html.classList.add('dark')
     
     // モバイルメニューの切り替え
     const menuToggle = document.getElementById('menuToggle')

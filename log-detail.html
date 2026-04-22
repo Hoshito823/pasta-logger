@@ -8,12 +8,30 @@
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900">
   <header class="sticky top-0 bg-white/70 backdrop-blur border-b">
-    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
+    <nav class="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
       <a href="/" class="font-semibold">Pasta Logger</a>
-      <a href="/log-list.html" class="btn">履歴</a>
-      <a href="/log-new.html" class="btn">新規記録</a>
-      <a href="/manage.html" class="btn">管理</a>
+
+      <!-- スマホ用メニューボタン -->
+      <div class="flex items-center gap-2">
+        <button id="menuToggle" class="btn p-2 md:hidden">メニュー</button>
+      </div>
+
+      <!-- デスクトップ用メニュー -->
+      <div class="hidden md:flex items-center gap-3">
+        <a href="/log-new.html" class="btn">作る記録</a>
+        <a href="/restaurant-new.html" class="btn">食べる記録</a>
+        <a href="/manage.html" class="btn">管理</a>
+      </div>
     </nav>
+
+    <!-- スマホ用ドロップダウンメニュー -->
+    <div id="mobileMenu" class="hidden bg-white border-t md:hidden">
+      <div class="mx-auto max-w-3xl px-4 py-3 space-y-2">
+        <a href="/log-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">作る記録</a>
+        <a href="/restaurant-new.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">食べる記録</a>
+        <a href="/manage.html" class="block py-2 px-4 hover:bg-gray-50 rounded-lg">管理</a>
+      </div>
+    </div>
   </header>
 
   <main class="mx-auto max-w-3xl px-4 py-6 space-y-4">
