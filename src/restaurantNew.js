@@ -1,6 +1,7 @@
 import { supa, requireSession } from './supa.js'
 import { initAuthUI } from './auth.js'
 import { v4 as uuidv4 } from 'uuid'
+import { resizeImageFile } from './imageResize.js'
 
 // 安全なセレクター関数
 const $ = (s) => {
@@ -96,6 +97,7 @@ setupPhotoSelection()
 // 写真アップロード関数
 async function uploadPhoto(file, userId) {
   if (!file) return { path: null, url: null }
+  file = await resizeImageFile(file)
   const ext = file.type === 'image/png' ? 'png' : 'jpg'
   const path = `${userId}/${uuidv4()}.${ext}`
   const { error } = await supa.storage.from('pasta-photos').upload(path, file, { upsert: false, contentType: file.type })
